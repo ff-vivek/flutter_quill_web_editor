@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:quill_web_editor/src/core/constants/app_colors.dart';
 import 'package:quill_web_editor/src/core/constants/app_fonts.dart';
 import 'package:quill_web_editor/src/core/constants/editor_config.dart';
@@ -15,11 +14,13 @@ import 'package:quill_web_editor/src/widgets/zoom_controls.dart';
 ///
 /// Note: Full widget tests require a web browser environment.
 /// These tests focus on the stateless utility widgets and configurations.
+///
+/// Google Fonts are bundled in test/fonts/ and registered in pubspec.yaml.
+/// The flutter_test_config.dart sets up the test environment to use them.
 void main() {
-  // Disable Google Fonts network fetching for tests
-  setUpAll(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
+  // Note: GoogleFonts.config.allowRuntimeFetching is set to false
+  // in flutter_test_config.dart which runs before these tests.
+  // Fonts are loaded from test/fonts/ via pubspec.yaml font declarations.
 
   group('AppTheme Tests', () {
     test('Should provide light theme', () {

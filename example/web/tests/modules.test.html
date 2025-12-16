@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quill Editor Modules Test Suite</title>
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=DM+Sans:wght@400;500;600&family=Roboto:wght@400;500&family=Open+Sans:wght@400;500&family=Lato:wght@400;700&family=Montserrat:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Import modular styles -->
+  <link rel="stylesheet" href="../styles/base.css">
+  <link rel="stylesheet" href="../styles/quill-theme.css">
+  <link rel="stylesheet" href="../styles/fonts.css">
+  <link rel="stylesheet" href="../styles/sizes.css">
+  <link rel="stylesheet" href="../styles/tables.css">
+  <link rel="stylesheet" href="../styles/media.css">
+  
+  <style>
+    :root {
+      --color-pass: #22c55e;
+      --color-fail: #ef4444;
+      --color-pending: #f59e0b;
+      --color-bg: #0f172a;
+      --color-card: #1e293b;
+      --color-text: #e2e8f0;
+      --color-muted: #94a3b8;
+      --color-border: #334155;
+    }
+    
+    * { box-sizing: border-box; }
+    
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Monaco', monospace;
+      background: var(--color-bg);
+      color: var(--color-text);
+      margin: 0;
+      padding: 24px;
+      line-height: 1.6;
+    }
+    
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      color: white;
+    }
+    
+    .subtitle {
+      color: var(--color-muted);
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+    
+    .summary {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 24px;
+      padding: 16px;
+      background: var(--color-card);
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+    }
+    
+    .summary-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .summary-count {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    
+    .summary-label {
+      font-size: 12px;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .pass { color: var(--color-pass); }
+    .fail { color: var(--color-fail); }
+    .pending { color: var(--color-pending); }
+    
+    .test-group {
+      background: var(--color-card);
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    
+    .test-group-header {
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid var(--color-border);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .test-case {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    
+    .test-case:last-child { border-bottom: none; }
+    
+    .test-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 12px;
+    }
+    
+    .test-icon.pass { background: rgba(34, 197, 94, 0.2); }
+    .test-icon.fail { background: rgba(239, 68, 68, 0.2); }
+    
+    .test-content { flex: 1; }
+    .test-name { font-weight: 500; margin-bottom: 4px; }
+    .test-details { font-size: 12px; color: var(--color-muted); }
+    
+    .test-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--color-fail);
+    }
+    
+    .code-block {
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin-top: 8px;
+      font-size: 11px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .code-label {
+      font-size: 10px;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    
+    #test-editor-container {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      width: 800px;
+      height: 600px;
+    }
+    
+    .run-btn {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      margin-bottom: 24px;
+      margin-right: 8px;
+    }
+    
+    .run-btn:hover { opacity: 0.9; }
+    .run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Quill Editor Modules Test Suite</h1>
+  <p class="subtitle">Testing modular JS/CSS files for the refactored editor</p>
+  
+  <button class="run-btn" id="runTests">▶ Run All Tests</button>
+  
+  <div class="summary" id="summary">
+    <div class="summary-item">
+      <span class="summary-count pass" id="passCount">0</span>
+      <span class="summary-label">Passed</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-count fail" id="failCount">0</span>
+      <span class="summary-label">Failed</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-count" id="totalCount">0</span>
+      <span class="summary-label">Total</span>
+    </div>
+  </div>
+  
+  <div id="results"></div>
+  
+  <!-- Hidden editor for testing -->
+  <div id="test-editor-container">
+    <div id="test-editor"></div>
+  </div>
+
+  <!-- Media Drag Icon -->
+  <div class="media-drag-icon" id="mediaDragIcon"></div>
+  <div class="resize-tooltip" id="resizeTooltip">50%</div>
+  <div class="table-drag-icon" id="tableDragIcon"></div>
+  <div class="media-resizer" id="mediaResizer">
+    <div class="resize-handle nw" data-handle="nw"></div>
+    <div class="resize-handle se" data-handle="se"></div>
+    <div class="media-toolbar">
+      <div class="media-toolbar-row">
+        <button class="media-align-btn" data-align="left"></button>
+        <button class="media-align-btn" data-align="center"></button>
+        <button class="media-align-btn" data-align="right"></button>
+        <button class="media-size-btn" data-size="25">25%</button>
+        <button class="media-size-btn" data-size="50">50%</button>
+      </div>
+      <div class="media-toolbar-row">
+        <span class="media-size-display" id="mediaSizeDisplay">0 × 0</span>
+        <button class="media-action-btn" id="mediaResetBtn">Reset</button>
+        <button class="media-action-btn media-delete-btn" id="mediaDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.js"></script>
+  
+  <script type="module">
+    // Import test subjects from modules
+    import { FONT_WHITELIST, SIZE_WHITELIST, FONT_FAMILY_MAP, TOOLBAR_OPTIONS } from '../js/config.js';
+    import { rgbToHex, normalizeColor, mapFontFamily, mapFontSize, preprocessHtml, extractBodyContent, cleanHtmlForPreview } from '../js/utils.js';
+
+    // Test state
+    const results = { passed: 0, failed: 0, tests: [] };
+    
+    // ============================================
+    // Test Definitions
+    // ============================================
+    const testGroups = [
+      {
+        name: '⚙️ Config Module Tests',
+        tests: [
+          {
+            name: 'FONT_WHITELIST should contain expected fonts',
+            run: () => {
+              const expected = ['roboto', 'open-sans', 'lato', 'montserrat', 'source-code', 'crimson', 'dm-sans'];
+              for (const font of expected) {
+                if (!FONT_WHITELIST.includes(font)) {
+                  throw new Error(`Missing font: ${font}`);
+                }
+              }
+              return { fonts: FONT_WHITELIST };
+            }
+          },
+          {
+            name: 'SIZE_WHITELIST should contain expected sizes',
+            run: () => {
+              const expected = ['small', false, 'large', 'huge'];
+              if (SIZE_WHITELIST.length !== expected.length) {
+                throw new Error(`Expected ${expected.length} sizes, got ${SIZE_WHITELIST.length}`);
+              }
+              return { sizes: SIZE_WHITELIST };
+            }
+          },
+          {
+            name: 'FONT_FAMILY_MAP should map Arial to Roboto',
+            run: () => {
+              if (FONT_FAMILY_MAP['arial'] !== 'roboto') {
+                throw new Error(`Arial should map to roboto, got ${FONT_FAMILY_MAP['arial']}`);
+              }
+              return { mapping: 'arial -> roboto' };
+            }
+          },
+          {
+            name: 'FONT_FAMILY_MAP should map Georgia to Crimson',
+            run: () => {
+              if (FONT_FAMILY_MAP['georgia'] !== 'crimson') {
+                throw new Error(`Georgia should map to crimson, got ${FONT_FAMILY_MAP['georgia']}`);
+              }
+              return { mapping: 'georgia -> crimson' };
+            }
+          },
+          {
+            name: 'TOOLBAR_OPTIONS should have container array',
+            run: () => {
+              if (!TOOLBAR_OPTIONS.container || !Array.isArray(TOOLBAR_OPTIONS.container)) {
+                throw new Error('TOOLBAR_OPTIONS.container should be an array');
+              }
+              if (TOOLBAR_OPTIONS.container.length < 10) {
+                throw new Error('TOOLBAR_OPTIONS should have at least 10 toolbar groups');
+              }
+              return { groups: TOOLBAR_OPTIONS.container.length };
+            }
+          }
+        ]
+      },
+      {
+        name: '🎨 Utils - Color Functions',
+        tests: [
+          {
+            name: 'rgbToHex should convert RGB to hex',
+            run: () => {
+              const result = rgbToHex('rgb(255, 0, 0)');
+              if (result !== '#ff0000') {
+                throw new Error(`Expected #ff0000, got ${result}`);
+              }
+              return { input: 'rgb(255, 0, 0)', output: result };
+            }
+          },
+          {
+            name: 'rgbToHex should handle RGBA',
+            run: () => {
+              const result = rgbToHex('rgba(0, 128, 255, 0.5)');
+              if (result !== '#0080ff') {
+                throw new Error(`Expected #0080ff, got ${result}`);
+              }
+              return { input: 'rgba(0, 128, 255, 0.5)', output: result };
+            }
+          },
+          {
+            name: 'rgbToHex should return hex as-is',
+            run: () => {
+              const result = rgbToHex('#ff5500');
+              if (result !== '#ff5500') {
+                throw new Error(`Expected #ff5500, got ${result}`);
+              }
+              return { input: '#ff5500', output: result };
+            }
+          },
+          {
+            name: 'normalizeColor should convert RGB to hex',
+            run: () => {
+              const result = normalizeColor('rgb(0, 255, 0)');
+              if (result !== '#00ff00') {
+                throw new Error(`Expected #00ff00, got ${result}`);
+              }
+              return { input: 'rgb(0, 255, 0)', output: result };
+            }
+          }
+        ]
+      },
+      {
+        name: '🔤 Utils - Font Mapping Functions',
+        tests: [
+          {
+            name: 'mapFontFamily should map Roboto',
+            run: () => {
+              const result = mapFontFamily('Roboto, sans-serif');
+              if (result !== 'roboto') {
+                throw new Error(`Expected roboto, got ${result}`);
+              }
+              return { input: 'Roboto, sans-serif', output: result };
+            }
+          },
+          {
+            name: 'mapFontFamily should map Arial to Roboto',
+            run: () => {
+              const result = mapFontFamily('Arial, Helvetica, sans-serif');
+              if (result !== 'roboto') {
+                throw new Error(`Expected roboto, got ${result}`);
+              }
+              return { input: 'Arial, Helvetica, sans-serif', output: result };
+            }
+          },
+          {
+            name: 'mapFontFamily should map Georgia to Crimson',
+            run: () => {
+              const result = mapFontFamily('Georgia, serif');
+              if (result !== 'crimson') {
+                throw new Error(`Expected crimson, got ${result}`);
+              }
+              return { input: 'Georgia, serif', output: result };
+            }
+          },
+          {
+            name: 'mapFontFamily should return false for unknown fonts',
+            run: () => {
+              const result = mapFontFamily('Unknown Font, fantasy');
+              if (result !== false) {
+                throw new Error(`Expected false, got ${result}`);
+              }
+              return { input: 'Unknown Font, fantasy', output: result };
+            }
+          },
+          {
+            name: 'mapFontSize should return small for 10px',
+            run: () => {
+              const result = mapFontSize('10px');
+              if (result !== 'small') {
+                throw new Error(`Expected small, got ${result}`);
+              }
+              return { input: '10px', output: result };
+            }
+          },
+          {
+            name: 'mapFontSize should return false for normal size (16px)',
+            run: () => {
+              const result = mapFontSize('16px');
+              if (result !== false) {
+                throw new Error(`Expected false (normal), got ${result}`);
+              }
+              return { input: '16px', output: result };
+            }
+          },
+          {
+            name: 'mapFontSize should return large for 20px',
+            run: () => {
+              const result = mapFontSize('20px');
+              if (result !== 'large') {
+                throw new Error(`Expected large, got ${result}`);
+              }
+              return { input: '20px', output: result };
+            }
+          },
+          {
+            name: 'mapFontSize should return huge for 30px',
+            run: () => {
+              const result = mapFontSize('30px');
+              if (result !== 'huge') {
+                throw new Error(`Expected huge, got ${result}`);
+              }
+              return { input: '30px', output: result };
+            }
+          },
+          {
+            name: 'mapFontSize should handle pt units',
+            run: () => {
+              // 8pt = ~10.66px (small)
+              const result = mapFontSize('8pt');
+              if (result !== 'small') {
+                throw new Error(`Expected small, got ${result}`);
+              }
+              return { input: '8pt', output: result };
+            }
+          }
+        ]
+      },
+      {
+        name: '📋 Utils - HTML Processing',
+        tests: [
+          {
+            name: 'preprocessHtml should add font class from inline style',
+            run: () => {
+              const input = '<span style="font-family: Roboto;">Test</span>';
+              const result = preprocessHtml(input);
+              if (!result.includes('ql-font-roboto')) {
+                throw new Error(`Expected ql-font-roboto class, got: ${result}`);
+              }
+              return { input, output: result };
+            }
+          },
+          {
+            name: 'preprocessHtml should add size class from inline style',
+            run: () => {
+              const input = '<span style="font-size: 24px;">Test</span>';
+              const result = preprocessHtml(input);
+              if (!result.includes('ql-size-large')) {
+                throw new Error(`Expected ql-size-large class, got: ${result}`);
+              }
+              return { input, output: result };
+            }
+          },
+          {
+            name: 'preprocessHtml should handle <font> tags with color',
+            run: () => {
+              const input = '<font color="#ff0000">Red text</font>';
+              const result = preprocessHtml(input);
+              if (!result.includes('#ff0000') && !result.includes('color')) {
+                throw new Error(`Expected color to be preserved, got: ${result}`);
+              }
+              return { input, output: result };
+            }
+          },
+          {
+            name: 'preprocessHtml should handle <font> tags with face',
+            run: () => {
+              const input = '<font face="Arial">Arial text</font>';
+              const result = preprocessHtml(input);
+              if (!result.includes('ql-font-roboto')) {
+                throw new Error(`Expected Arial to map to ql-font-roboto, got: ${result}`);
+              }
+              return { input, output: result };
+            }
+          },
+          {
+            name: 'extractBodyContent should extract body from full HTML',
+            run: () => {
+              const input = '<!DOCTYPE html><html><head><title>Test</title></head><body><p>Content</p></body></html>';
+              const result = extractBodyContent(input);
+              if (!result.includes('<p>Content</p>')) {
+                throw new Error(`Expected body content, got: ${result}`);
+              }
+              if (result.includes('<!DOCTYPE') || result.includes('<html')) {
+                throw new Error(`Should not include DOCTYPE or html tags, got: ${result}`);
+              }
+              return { input: '[full HTML document]', output: result };
+            }
+          },
+          {
+            name: 'extractBodyContent should return fragment as-is',
+            run: () => {
+              const input = '<p>Simple paragraph</p>';
+              const result = extractBodyContent(input);
+              if (result !== input) {
+                throw new Error(`Expected input unchanged, got: ${result}`);
+              }
+              return { input, output: result };
+            }
+          },
+          {
+            name: 'cleanHtmlForPreview should remove selection classes',
+            run: () => {
+              const input = '<table class="selected ql-table-selected"><td class="ql-cell-selected">Content</td></table>';
+              const result = cleanHtmlForPreview(input);
+              if (result.includes('selected') || result.includes('ql-table-selected') || result.includes('ql-cell-selected')) {
+                throw new Error(`Expected selection classes removed, got: ${result}`);
+              }
+              return { input, output: result };
+            }
+          },
+          {
+            name: 'cleanHtmlForPreview should preserve alignment classes',
+            run: () => {
+              const input = '<img class="selected align-center">';
+              const result = cleanHtmlForPreview(input);
+              if (!result.includes('align-center')) {
+                throw new Error(`Expected align-center preserved, got: ${result}`);
+              }
+              if (result.includes('selected')) {
+                throw new Error(`Expected selected removed, got: ${result}`);
+              }
+              return { input, output: result };
+            }
+          }
+        ]
+      },
+      {
+        name: '🎨 CSS Styles Tests',
+        tests: [
+          {
+            name: 'Font classes should be defined in CSS',
+            run: () => {
+              const fontClasses = ['ql-font-roboto', 'ql-font-open-sans', 'ql-font-lato', 'ql-font-montserrat', 'ql-font-source-code', 'ql-font-crimson', 'ql-font-dm-sans'];
+              const testEl = document.createElement('span');
+              
+              for (const cls of fontClasses) {
+                testEl.className = cls;
+                document.body.appendChild(testEl);
+                const computed = getComputedStyle(testEl);
+                const fontFamily = computed.fontFamily;
+                document.body.removeChild(testEl);
+                
+                // Check that the font family was actually applied (not default)
+                if (fontFamily.includes('Times') && cls !== 'ql-font-crimson') {
+                  throw new Error(`Font class ${cls} not applied properly, got: ${fontFamily}`);
+                }
+              }
+              
+              return { classes: fontClasses.join(', ') };
+            }
+          },
+          {
+            name: 'Size classes should be defined in CSS',
+            run: () => {
+              const sizes = {
+                'ql-size-small': 0.75,
+                'ql-size-large': 1.5,
+                'ql-size-huge': 2.5
+              };
+              
+              // Create a container with fixed base font-size
+              const container = document.createElement('div');
+              container.style.fontSize = '16px';
+              document.body.appendChild(container);
+              
+              const testEl = document.createElement('span');
+              testEl.textContent = 'Test';
+              container.appendChild(testEl);
+              
+              for (const [cls, expectedEm] of Object.entries(sizes)) {
+                testEl.className = cls;
+                const computed = getComputedStyle(testEl);
+                const fontSize = parseFloat(computed.fontSize);
+                const expectedPx = expectedEm * 16;
+                
+                if (Math.abs(fontSize - expectedPx) > 2) {
+                  throw new Error(`${cls}: expected ~${expectedPx}px, got ${fontSize}px`);
+                }
+              }
+              
+              document.body.removeChild(container);
+              return { sizes: Object.keys(sizes).join(', ') };
+            }
+          }
+        ]
+      }
+    ];
+    
+    // ============================================
+    // Test Runner
+    // ============================================
+    function runTests() {
+      const resultsContainer = document.getElementById('results');
+      resultsContainer.innerHTML = '';
+      results.passed = 0;
+      results.failed = 0;
+      
+      testGroups.forEach(group => {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'test-group';
+        
+        let groupPassed = 0;
+        let groupFailed = 0;
+        
+        const testsHtml = group.tests.map(test => {
+          let status = 'pass';
+          let error = null;
+          let details = null;
+          
+          try {
+            details = test.run();
+            groupPassed++;
+            results.passed++;
+          } catch (e) {
+            status = 'fail';
+            error = e.message;
+            groupFailed++;
+            results.failed++;
+          }
+          
+          const icon = status === 'pass' ? '✓' : '✗';
+          
+          return `
+            <div class="test-case">
+              <div class="test-icon ${status}">${icon}</div>
+              <div class="test-content">
+                <div class="test-name">${test.name}</div>
+                ${error ? `<div class="test-error">${error}</div>` : ''}
+                ${details ? `
+                  <div class="code-block">
+                    <div class="code-label">Details:</div>
+                    ${escapeHtml(JSON.stringify(details, null, 2))}
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        const statusIcon = groupFailed === 0 ? '✓' : '✗';
+        const statusClass = groupFailed === 0 ? 'pass' : 'fail';
+        
+        groupEl.innerHTML = `
+          <div class="test-group-header">
+            <span class="${statusClass}">${statusIcon}</span>
+            ${group.name}
+            <span class="test-details">(${groupPassed}/${group.tests.length} passed)</span>
+          </div>
+          ${testsHtml}
+        `;
+        
+        resultsContainer.appendChild(groupEl);
+      });
+      
+      // Update summary
+      document.getElementById('passCount').textContent = results.passed;
+      document.getElementById('failCount').textContent = results.failed;
+      document.getElementById('totalCount').textContent = results.passed + results.failed;
+      
+      // Log results to console for automation
+      console.log(`\n========== TEST RESULTS ==========`);
+      console.log(`✅ Passed: ${results.passed}`);
+      console.log(`❌ Failed: ${results.failed}`);
+      console.log(`📊 Total: ${results.passed + results.failed}`);
+      console.log(`==================================\n`);
+    }
+    
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+    
+    // Event listener
+    document.getElementById('runTests').addEventListener('click', () => {
+      const btn = document.getElementById('runTests');
+      btn.disabled = true;
+      btn.textContent = '⏳ Running...';
+      
+      setTimeout(() => {
+        runTests();
+        btn.disabled = false;
+        btn.textContent = '▶ Run All Tests';
+      }, 100);
+    });
+    
+    // Auto-run on load
+    window.addEventListener('load', () => setTimeout(runTests, 500));
+  </script>
+</body>
+</html>
+

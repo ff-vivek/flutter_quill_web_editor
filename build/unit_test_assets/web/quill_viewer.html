@@ -3,436 +3,53 @@
   ============================================
   Quill Viewer for Flutter WebView
   ============================================
-  Version: 1.6.0
+  Version: 2.0.0
   Last Updated: 2025-12-17
   
   CHANGELOG:
   ----------
+  v2.0.0 (2025-12-17)
+    - Refactored to use modular CSS and JavaScript
+    - Shared styles with editor
+    - Improved maintainability
+  
   v1.6.0 (2025-12-17)
     - Synced with editor v1.6.0
   
-  v1.5.0 (2025-12-17)
-    - Synced with editor v1.5.0
-    - All font classes supported
-    - Table styling improvements
-  
-  v1.4.0 (2025-12-17)
-    - Synced with editor v1.4.0
-  
-  v1.3.0 (2025-12-16)
-    - Added media display styles
-    - Added alignment support
-  
-  v1.2.0 (2025-12-15)
-    - Added custom font support (7 fonts)
-    - Added font size classes
-  
-  v1.1.0 (2025-12-14)
-    - Added table styling
-    - Added formula rendering
-  
-  v1.0.0 (2025-12-13)
-    - Initial release
-    - Read-only HTML viewer with Quill styling
+  [Previous changelog entries preserved in individual modules]
   ============================================
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quill Viewer v1.6.0</title>
+  <title>Quill Viewer v2.0.0</title>
   
-  <!-- Quill CSS for styling -->
+  <!-- External CSS Dependencies -->
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css" rel="stylesheet">
   
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=DM+Sans:wght@400;500;600&family=Roboto:wght@400;500&family=Open+Sans:wght@400;500&family=Lato:wght@400;700&family=Montserrat:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
   
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    html, body {
-      height: 100%;
-      font-family: 'Crimson Pro', Georgia, serif;
-      font-size: 1.125rem;
-      line-height: 1.8;
-      color: #2c2825;
-      background: #ffffff;
-      overflow-x: hidden;
-    }
-    
-    .ql-editor {
-      padding: 24px;
-      transform-origin: top left;
-      transition: transform 0.15s ease-out;
-    }
-    
-    .ql-editor h1 {
-      font-size: 2.25rem;
-      font-weight: 600;
-      margin-bottom: 0.5em;
-    }
-    
-    .ql-editor h2 {
-      font-size: 1.75rem;
-      font-weight: 600;
-      margin-bottom: 0.5em;
-    }
-    
-    .ql-editor h3 {
-      font-size: 1.375rem;
-      font-weight: 600;
-      margin-bottom: 0.5em;
-    }
-    
-    .ql-editor h4 {
-      font-size: 1.125rem;
-      font-weight: 600;
-      margin-bottom: 0.5em;
-    }
-    
-    .ql-editor h5 {
-      font-size: 0.875rem;
-      font-weight: 600;
-      margin-bottom: 0.5em;
-    }
-    
-    .ql-editor h6 {
-      font-size: 0.75rem;
-      font-weight: 600;
-      margin-bottom: 0.5em;
-    }
-    
-    .ql-editor p {
-      margin-bottom: 1em;
-    }
-    
-    .ql-editor blockquote {
-      border-left: 4px solid #c45d35;
-      padding-left: 16px;
-      margin: 24px 0;
-      color: #6b6560;
-      font-style: italic;
-    }
-    
-    .ql-editor pre {
-      background: #f8f6f3;
-      border-radius: 8px;
-      padding: 16px;
-      font-family: 'Source Code Pro', 'SF Mono', 'Consolas', monospace;
-      font-size: 0.875rem;
-    }
-    
-    .ql-editor a {
-      color: #c45d35;
-      text-decoration: underline;
-    }
-    
-    .ql-editor img {
-      max-width: 100%;
-      border-radius: 8px;
-    }
-    
-    .ql-editor table {
-      border-collapse: collapse;
-      width: 100%;
-      margin: 16px 0;
-    }
-    
-    .ql-editor table td {
-      border: 1px solid #e5e0da;
-      padding: 8px 16px;
-    }
-    
-    /* Header row styling - only when table has .table-with-header class */
-    .ql-editor table.table-with-header tr:first-child td {
-      background: #f8f6f3;
-      font-weight: 500;
-    }
-    
-    /* Hide ALL table/cell selection colors in preview mode */
-    .ql-editor table td.ql-cell-selected,
-    .ql-editor table td.selected,
-    .ql-editor table.ql-table-selected,
-    .ql-editor table.selected,
-    .ql-editor .ql-table-wrapper.selected,
-    .ql-editor [class*="selected"],
-    .ql-editor [class*="ql-cell-selected"],
-    .ql-editor td[style*="background"],
-    .ql-editor .ql-cell-focused,
-    .ql-editor .ql-cell-selected,
-    .ql-editor .ql-table-selected td {
-      background-color: transparent !important;
-      background: transparent !important;
-      outline: none !important;
-      box-shadow: none !important;
-      border-color: #e5e0da !important;
-    }
-    
-    /* Restore normal cell background after removing selection */
-    .ql-editor table td {
-      background-color: transparent !important;
-    }
-    
-    /* Only apply header background when explicitly set */
-    .ql-editor table.table-with-header tr:first-child td {
-      background-color: #f8f6f3 !important;
-    }
-    
-    /* Override quill-table-better selection styles */
-    .ql-table-better-selected-td,
-    .ql-table-better-selection-line,
-    .ql-table-better-selection-block,
-    .ql-table-better-col-tool,
-    .ql-table-better-row-tool,
-    .ql-table-better-corner,
-    [class*="ql-table-better-select"],
-    [class*="ql-table-better-tool"] {
-      display: none !important;
-      background: transparent !important;
-      border-color: transparent !important;
-      visibility: hidden !important;
-    }
-    
-    .ql-editor ul, .ql-editor ol {
-      padding-left: 24px;
-      margin-bottom: 1em;
-    }
-    
-    .ql-editor li {
-      margin-bottom: 0.5em;
-    }
-    
-    /* Font family support */
-    .ql-font-roboto { font-family: 'Roboto', sans-serif; }
-    .ql-font-open-sans { font-family: 'Open Sans', sans-serif; }
-    .ql-font-lato { font-family: 'Lato', sans-serif; }
-    .ql-font-montserrat { font-family: 'Montserrat', sans-serif; }
-    .ql-font-source-code { font-family: 'Source Code Pro', monospace; }
-    .ql-font-crimson { font-family: 'Crimson Pro', serif; }
-    .ql-font-dm-sans { font-family: 'DM Sans', sans-serif; }
-    
-    /* Video embed styles */
-    .ql-editor .ql-video,
-    .ql-editor iframe {
-      display: block;
-      max-width: 100%;
-      width: 100%;
-      aspect-ratio: 16/9;
-      border-radius: 8px;
-      margin: 16px 0;
-    }
-    
-    /* Media alignment - match editor alignment classes */
-    .ql-editor img.align-left,
-    .ql-editor iframe.align-left,
-    .ql-editor video.align-left {
-      float: left !important;
-      margin-right: 16px !important;
-      margin-left: 0 !important;
-      margin-bottom: 8px;
-    }
-    
-    .ql-editor table.align-left,
-    .ql-editor .ql-table-wrapper.align-left {
-      float: left !important;
-      margin-right: 16px !important;
-      margin-left: 0 !important;
-      margin-bottom: 8px;
-    }
-    
-    .ql-editor img.align-center,
-    .ql-editor iframe.align-center,
-    .ql-editor video.align-center {
-      display: block !important;
-      margin-left: auto !important;
-      margin-right: auto !important;
-      margin-top: 16px;
-      margin-bottom: 16px;
-      float: none !important;
-    }
-    
-    .ql-editor table.align-center,
-    .ql-editor .ql-table-wrapper.align-center {
-      display: table !important;
-      margin-left: auto !important;
-      margin-right: auto !important;
-      margin-top: 16px;
-      margin-bottom: 16px;
-      float: none !important;
-    }
-    
-    .ql-editor img.align-right,
-    .ql-editor iframe.align-right,
-    .ql-editor video.align-right {
-      float: right !important;
-      margin-left: 16px !important;
-      margin-right: 0 !important;
-      margin-bottom: 8px;
-    }
-    
-    .ql-editor table.align-right,
-    .ql-editor .ql-table-wrapper.align-right {
-      float: right !important;
-      margin-left: 16px !important;
-      margin-right: 0 !important;
-      margin-bottom: 8px;
-    }
-    
-    /* Ensure tables use border-box for consistent sizing */
-    .ql-editor table {
-      box-sizing: border-box;
-    }
-    
-    /* Ensure float containers clear properly */
-    .ql-editor::after {
-      content: "";
-      display: table;
-      clear: both;
-    }
-    
-    .ql-editor p::after {
-      content: "";
-      display: table;
-      clear: both;
-    }
-    
-    /* Override iframe default width for aligned items */
-    .ql-editor iframe.align-left,
-    .ql-editor iframe.align-right {
-      width: auto;
-      aspect-ratio: auto;
-    }
-    
-    /* Size variations */
-    .ql-size-small {
-      font-size: 0.75em;
-    }
-    
-    .ql-size-large {
-      font-size: 1.5em;
-    }
-    
-    .ql-size-huge {
-      font-size: 2.5em;
-    }
-    
-    /* Subscript and Superscript */
-    sub {
-      vertical-align: sub;
-      font-size: smaller;
-    }
-    
-    sup {
-      vertical-align: super;
-      font-size: smaller;
-    }
-    
-    /* Direction RTL */
-    .ql-direction-rtl {
-      direction: rtl;
-      text-align: inherit;
-    }
-    
-    /* Checklist styles */
-    ul[data-checked="true"] > li::before,
-    ul[data-checked="false"] > li::before {
-      color: #c45d35;
-    }
-  </style>
+  <!-- Modular Styles (shared with editor) -->
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/quill-theme.css">
+  <link rel="stylesheet" href="styles/fonts.css">
+  <link rel="stylesheet" href="styles/sizes.css">
+  <link rel="stylesheet" href="styles/tables.css">
+  <link rel="stylesheet" href="styles/media.css">
+  <link rel="stylesheet" href="styles/viewer.css">
 </head>
-<body>
+<body class="viewer-mode">
   <div id="viewer" class="ql-editor"></div>
 
-  <script>
-    // Clean HTML by removing selection classes and inline styles
-    function cleanHtmlForPreview(html) {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      
-      // Classes to remove (selection-related)
-      const selectionClasses = [
-        'selected', 'ql-cell-selected', 'ql-table-selected', 
-        'ql-cell-focused', 'ql-table-better-selected-td',
-        'ql-table-better-selection-line', 'ql-table-better-selection-block'
-      ];
-      
-      // Classes to preserve (alignment-related)
-      const preserveClasses = ['align-left', 'align-center', 'align-right', 'table-with-header'];
-      
-      // Remove selection classes from all elements
-      doc.querySelectorAll('*').forEach(el => {
-        selectionClasses.forEach(cls => {
-          el.classList.remove(cls);
-        });
-        
-        // Remove any class containing 'select' (but preserve alignment and header classes)
-        const classesToRemove = [];
-        el.classList.forEach(cls => {
-          if (cls.includes('select') && !preserveClasses.includes(cls)) {
-            classesToRemove.push(cls);
-          }
-        });
-        classesToRemove.forEach(cls => el.classList.remove(cls));
-        
-        // Remove inline background styles from table cells (selection colors)
-        if (el.tagName === 'TD' || el.tagName === 'TH') {
-          // Only remove if it looks like a selection color (light blue, etc.)
-          const bgStyle = el.style.backgroundColor;
-          if (bgStyle && (bgStyle.includes('rgb(') || bgStyle.includes('rgba('))) {
-            // Check if it's a selection-like color (bluish tones)
-            const match = bgStyle.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-            if (match) {
-              const [, r, g, b] = match.map(Number);
-              // Remove if it's a light blue/selection color (high blue component)
-              if (b > r && b > g) {
-                el.style.removeProperty('background-color');
-                el.style.removeProperty('background');
-              }
-            }
-          }
-        }
-      });
-      
-      // Remove quill-table-better tool elements entirely
-      doc.querySelectorAll('[class*="ql-table-better-tool"], [class*="ql-table-better-col"], [class*="ql-table-better-row"], [class*="ql-table-better-corner"]').forEach(el => {
-        el.remove();
-      });
-      
-      return doc.body.innerHTML;
-    }
+  <!-- Application Entry Point -->
+  <script type="module">
+    import { initializeViewer } from './js/viewer.js';
     
-    // Listen for messages from Flutter
-    window.addEventListener('message', function(event) {
-      if (event.source !== window.parent) return;
-
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'command') {
-          if (data.action === 'setHTML') {
-            const cleanedHtml = cleanHtmlForPreview(data.html || '');
-            document.getElementById('viewer').innerHTML = cleanedHtml;
-          } else if (data.action === 'setZoom') {
-            const zoomLevel = Math.max(0.5, Math.min(3.0, data.zoom));
-            const viewer = document.getElementById('viewer');
-            if (viewer) {
-              viewer.style.transform = `scale(${zoomLevel})`;
-              viewer.style.width = `${100 / zoomLevel}%`;
-            }
-          }
-        }
-      } catch (e) {
-        // Plain HTML string
-        const cleanedHtml = cleanHtmlForPreview(event.data);
-        document.getElementById('viewer').innerHTML = cleanedHtml;
-      }
-    });
+    // Initialize the viewer
+    initializeViewer('#viewer');
   </script>
 </body>
 </html>
-

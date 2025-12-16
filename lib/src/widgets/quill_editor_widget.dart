@@ -312,6 +312,7 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
     data['source'] = 'flutter';
     data['type'] = 'command';
     final jsonString = jsonEncode(data);
+    debugPrint('QuillEditorWidget: Sending command: ${data['action']}');
     _iframe?.contentWindow?.postMessage(jsonString, '*');
   }
 

@@ -106,9 +106,12 @@ export function handleCommand(data, editor, Quill) {
 
     case 'undo':
       {
+        console.log('Executing undo command');
         const history = editor.getModule('history');
+        console.log('History module:', history);
         if (history) {
           history.undo();
+          console.log('Undo executed');
           sendContentChange(editor);
         } else {
           console.warn('History module not found');
@@ -118,9 +121,12 @@ export function handleCommand(data, editor, Quill) {
 
     case 'redo':
       {
+        console.log('Executing redo command');
         const history = editor.getModule('history');
+        console.log('History module:', history);
         if (history) {
           history.redo();
+          console.log('Redo executed');
           sendContentChange(editor);
         } else {
           console.warn('History module not found');

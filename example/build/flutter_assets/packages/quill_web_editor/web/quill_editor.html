@@ -1,0 +1,2935 @@
+<!DOCTYPE html>
+<!--
+  ============================================
+  Quill Editor for Flutter WebView
+  ============================================
+  Version: 1.9.0
+  Last Updated: 2025-12-17
+  
+  CHANGELOG:
+  ----------
+  v1.9.0 (2025-12-17)
+    - Added cell/column resize detection for quill-table-better
+    - Added MutationObserver to detect table style changes
+    - Cell resize now triggers content update and save
+  
+  v1.8.2 (2025-12-17)
+    - Fixed table resize not triggering save
+    - Added sendContentChangeImmediate() to bypass throttle
+    - Reduced timeout to 10ms for faster response
+  
+  v1.8.1 (2025-12-17)
+    - Fixed table resize not updating preview
+    - Added setTimeout to ensure DOM update before sending to Flutter
+    - Improved console logging for debugging
+  
+  v1.8.0 (2025-12-17)
+    - Added table drag resize with percentage display
+    - Tables show blue drag icon on hover (separate from media controls)
+    - Percentage stored as data-width-percent attribute on table
+    - Percentage tooltip shown while dragging
+  
+  v1.7.0 (2025-12-17)
+    - Removed media controls from tables (resize/alignment toolbar)
+    - Tables now handled only by quill-table-better plugin
+    - Media controls apply only to images, videos, and iframes
+  
+  v1.6.0 (2025-12-17)
+    - Fixed media controls not working on multiple tables
+    - Changed event listeners to use capture phase for better table handling
+    - Improved table detection for nested elements
+  
+  v1.5.0 (2025-12-17)
+    - Added drag & drop handlers to preserve media properties in table cells
+    - Added MutationObserver to ensure video controls in table cells
+    - Added TD/TH clipboard matchers for font preservation
+    - Enhanced preprocessHtml to wrap text in table cells with font classes
+  
+  v1.4.0 (2025-12-17)
+    - Added font family clipboard matchers (TD, TH, SPAN)
+    - Improved paste handling for fonts in tables
+    - Fixed RGB to hex color conversion
+    - Fixed legacy <font> tag color handling
+  
+  v1.3.0 (2025-12-16)
+    - Added media resize controls
+    - Added alignment controls for images/videos/tables
+    - Added percentage-based sizing
+  
+  v1.2.0 (2025-12-15)
+    - Added custom font support (7 fonts)
+    - Added font size classes (small, large, huge)
+    - Added line height support
+  
+  v1.1.0 (2025-12-14)
+    - Added quill-table-better integration
+    - Added formula/KaTeX support
+    - Added color picker normalization
+  
+  v1.0.0 (2025-12-13)
+    - Initial release
+    - Basic Quill editor with Flutter WebView integration
+    - Two-way communication with Flutter
+  ============================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quill Editor v1.9.0</title>
+  
+  <!-- Quill CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css" rel="stylesheet">
+  
+  <!-- Quill Table Better CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css" rel="stylesheet">
+  
+  <!-- KaTeX for Formula support -->
+  <link href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" rel="stylesheet">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=DM+Sans:wght@400;500;600&family=Roboto:wght@400;500&family=Open+Sans:wght@400;500&family=Lato:wght@400;700&family=Montserrat:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    html, body {
+      height: 100%;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #ffffff;
+    }
+    
+    #editor-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    
+    .ql-toolbar.ql-snow {
+      border: none;
+      border-bottom: 1px solid #e5e0da;
+      padding: 12px 16px;
+      background: #ffffff;
+      font-family: 'DM Sans', sans-serif;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    .ql-container.ql-snow {
+      border: none;
+      flex: 1;
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 1.125rem;
+      overflow-y: auto;
+    }
+    
+    .ql-editor {
+      padding: 24px;
+      line-height: 1.8;
+      color: #2c2825;
+      min-height: 100%;
+      transform-origin: top left;
+      transition: transform 0.15s ease-out;
+    }
+    
+    .ql-editor.ql-blank::before {
+      color: #9a948e;
+      font-style: normal;
+      left: 24px;
+      right: 24px;
+    }
+    
+    /* Toolbar styling */
+    .ql-snow .ql-stroke {
+      stroke: #6b6560;
+    }
+    
+    .ql-snow .ql-fill {
+      fill: #6b6560;
+    }
+    
+    .ql-snow .ql-picker {
+      color: #6b6560;
+    }
+    
+    .ql-snow.ql-toolbar button:hover,
+    .ql-snow .ql-toolbar button:hover,
+    .ql-snow.ql-toolbar button.ql-active,
+    .ql-snow .ql-toolbar button.ql-active,
+    .ql-snow.ql-toolbar .ql-picker-label:hover,
+    .ql-snow .ql-toolbar .ql-picker-label:hover {
+      color: #c45d35;
+    }
+    
+    .ql-snow.ql-toolbar button:hover .ql-stroke,
+    .ql-snow .ql-toolbar button:hover .ql-stroke,
+    .ql-snow.ql-toolbar button.ql-active .ql-stroke,
+    .ql-snow .ql-toolbar button.ql-active .ql-stroke {
+      stroke: #c45d35;
+    }
+    
+    .ql-snow.ql-toolbar button:hover .ql-fill,
+    .ql-snow .ql-toolbar button:hover .ql-fill,
+    .ql-snow.ql-toolbar button.ql-active .ql-fill,
+    .ql-snow .ql-toolbar button.ql-active .ql-fill {
+      fill: #c45d35;
+    }
+    
+    .ql-snow .ql-picker-options {
+      background: #ffffff;
+      border: 1px solid #e5e0da;
+      border-radius: 8px;
+      box-shadow: 0 12px 32px rgba(44, 40, 37, 0.12);
+    }
+    
+    /* Content styles */
+    .ql-editor h1 {
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 2.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5em;
+      color: #2c2825;
+    }
+    
+    .ql-editor h2 {
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 0.5em;
+      color: #2c2825;
+    }
+    
+    .ql-editor h3 {
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 1.375rem;
+      font-weight: 600;
+      margin-bottom: 0.5em;
+      color: #2c2825;
+    }
+    
+    .ql-editor p {
+      margin-bottom: 1em;
+    }
+    
+    .ql-editor blockquote {
+      border-left: 4px solid #c45d35;
+      padding-left: 16px;
+      margin: 24px 0;
+      color: #6b6560;
+      font-style: italic;
+    }
+    
+    .ql-editor pre {
+      background: #f8f6f3;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: 0.875rem;
+      overflow-x: auto;
+    }
+    
+    .ql-editor a {
+      color: #c45d35;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    
+    /* Media wrapper for resize icon */
+    .ql-editor .media-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .ql-editor img,
+    .ql-editor iframe,
+    .ql-editor video {
+      max-width: 100%;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: box-shadow 0.15s ease;
+      position: relative;
+    }
+    
+    .ql-editor img:hover,
+    .ql-editor iframe:hover,
+    .ql-editor video:hover {
+      box-shadow: 0 0 0 2px rgba(196, 93, 53, 0.3);
+    }
+    
+    .ql-editor img.selected,
+    .ql-editor iframe.selected,
+    .ql-editor video.selected,
+    .ql-editor table.selected {
+      box-shadow: 0 0 0 3px #c45d35;
+    }
+    
+    /* Table alignment - don't override explicit width */
+    .ql-editor table.align-left,
+    .ql-editor .ql-table-wrapper.align-left {
+      float: left !important;
+      margin-right: 16px !important;
+      margin-left: 0 !important;
+      margin-bottom: 8px;
+    }
+    
+    .ql-editor table.align-center,
+    .ql-editor .ql-table-wrapper.align-center {
+      display: table !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      margin-top: 16px;
+      margin-bottom: 16px;
+      float: none !important;
+    }
+    
+    .ql-editor table.align-right,
+    .ql-editor .ql-table-wrapper.align-right {
+      float: right !important;
+      margin-left: 16px !important;
+      margin-right: 0 !important;
+      margin-bottom: 8px;
+    }
+    
+    /* Ensure tables use border-box for consistent sizing */
+    .ql-editor table {
+      box-sizing: border-box;
+    }
+    
+    /* Resize drag icon overlay */
+    .media-drag-icon {
+      position: fixed;
+      width: 28px;
+      height: 28px;
+      background: #c45d35;
+      border-radius: 6px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: nwse-resize;
+      z-index: 101;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      pointer-events: auto;
+    }
+    
+    .media-drag-icon.visible {
+      display: flex;
+    }
+    
+    .media-drag-icon svg {
+      width: 16px;
+      height: 16px;
+      color: white;
+    }
+    
+    .media-drag-icon:hover {
+      background: #a84a2a;
+      transform: scale(1.1);
+    }
+    
+    .media-drag-icon:active {
+      transform: scale(0.95);
+    }
+    
+    /* Resize tooltip - shows percentage while dragging */
+    .resize-tooltip {
+      position: fixed;
+      background: #c45d35;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      z-index: 1000;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -100%) translateY(-10px);
+      transition: opacity 0.15s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      white-space: nowrap;
+    }
+    
+    .resize-tooltip.visible {
+      opacity: 1;
+    }
+    
+    .resize-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #c45d35;
+    }
+    
+    /* Table drag icon - separate from media drag icon */
+    .table-drag-icon {
+      position: fixed;
+      width: 28px;
+      height: 28px;
+      background: #2563eb;
+      border-radius: 6px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: nwse-resize;
+      z-index: 101;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    .table-drag-icon.visible {
+      display: flex;
+    }
+    
+    .table-drag-icon svg {
+      width: 16px;
+      height: 16px;
+      color: white;
+    }
+    
+    .table-drag-icon:hover {
+      background: #1d4ed8;
+      transform: scale(1.1);
+    }
+    
+    .table-drag-icon:active {
+      transform: scale(0.95);
+    }
+    
+    /* Media alignment - use !important to override inline styles */
+    .ql-editor img.align-left,
+    .ql-editor iframe.align-left,
+    .ql-editor video.align-left {
+      float: left !important;
+      margin-right: 16px !important;
+      margin-left: 0 !important;
+      margin-bottom: 8px;
+      display: inline !important;
+    }
+    
+    .ql-editor img.align-center,
+    .ql-editor iframe.align-center,
+    .ql-editor video.align-center {
+      display: block !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      margin-top: 16px;
+      margin-bottom: 16px;
+      float: none !important;
+    }
+    
+    .ql-editor img.align-right,
+    .ql-editor iframe.align-right,
+    .ql-editor video.align-right {
+      float: right !important;
+      margin-left: 16px !important;
+      margin-right: 0 !important;
+      margin-bottom: 8px;
+      display: inline !important;
+    }
+    
+    /* Ensure media respects container width */
+    .ql-editor img,
+    .ql-editor iframe,
+    .ql-editor video {
+      max-width: 100%;
+    }
+    
+    /* Media Resizer */
+    .media-resizer {
+      position: fixed;
+      border: 2px solid #c45d35;
+      background: transparent;
+      pointer-events: none;
+      z-index: 100;
+      display: none;
+    }
+    
+    .media-resizer.active {
+      display: block;
+    }
+    
+    .resize-handle {
+      position: absolute;
+      background: #c45d35;
+      border: 2px solid white;
+      pointer-events: auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    
+    .resize-handle.nw,
+    .resize-handle.ne,
+    .resize-handle.sw,
+    .resize-handle.se {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+    
+    .resize-handle.nw { top: -6px; left: -6px; cursor: nwse-resize; }
+    .resize-handle.ne { top: -6px; right: -6px; cursor: nesw-resize; }
+    .resize-handle.sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+    .resize-handle.se { bottom: -6px; right: -6px; cursor: nwse-resize; }
+    
+    .resize-handle.n,
+    .resize-handle.s {
+      width: 40px;
+      height: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 4px;
+    }
+    
+    .resize-handle.n { top: -4px; cursor: ns-resize; }
+    .resize-handle.s { bottom: -4px; cursor: ns-resize; }
+    
+    .resize-handle.e,
+    .resize-handle.w {
+      width: 8px;
+      height: 40px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-radius: 4px;
+    }
+    
+    .resize-handle.e { right: -4px; cursor: ew-resize; }
+    .resize-handle.w { left: -4px; cursor: ew-resize; }
+    
+    .media-toolbar {
+      position: absolute;
+      bottom: -68px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      pointer-events: auto;
+      min-width: 260px;
+    }
+    
+    .media-toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .media-toolbar-divider {
+      width: 1px;
+      height: 20px;
+      background: #e5e0da;
+      margin: 0 4px;
+    }
+    
+    .media-align-btn,
+    .media-size-btn {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: #6b6560;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    
+    .media-align-btn {
+      width: 28px;
+    }
+    
+    .media-size-btn {
+      padding: 0 10px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    
+    .media-align-btn:hover,
+    .media-size-btn:hover {
+      background: #f8f6f3;
+      color: #c45d35;
+      border-color: #e5e0da;
+    }
+    
+    .media-align-btn.active,
+    .media-size-btn.active {
+      background: rgba(196, 93, 53, 0.1);
+      color: #c45d35;
+      border-color: #c45d35;
+    }
+    
+    .media-size-display {
+      font-size: 11px;
+      color: #9a948e;
+      font-family: 'SF Mono', monospace;
+      flex: 1;
+    }
+    
+    .media-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: transparent;
+      border: 1px solid #e5e0da;
+      border-radius: 6px;
+      color: #6b6560;
+      font-size: 11px;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    
+    .media-action-btn:hover {
+      background: #f8f6f3;
+      color: #2c2825;
+    }
+    
+    .media-action-btn.media-delete-btn:hover {
+      background: #fef2f2;
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+    
+    /* Prevent iframe interactions when not selected */
+    .ql-editor iframe:not(.selected) {
+      pointer-events: none;
+    }
+    
+    /* Table styles */
+    .ql-editor table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 16px 0;
+    }
+    
+    .ql-editor table td {
+      border: 1px solid #e5e0da;
+      padding: 8px 16px;
+      min-width: 80px;
+    }
+    
+    /* Header row styling - only applied when table has .table-with-header class */
+    .ql-editor table.table-with-header tr:first-child td {
+      background: #f8f6f3;
+      font-weight: 500;
+    }
+    
+    /* Table header toggle button in context menu */
+    .table-header-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #2c2825;
+    }
+    
+    .table-header-toggle:hover {
+      background: #f8f6f3;
+    }
+    
+    .table-header-toggle input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #c45d35;
+      cursor: pointer;
+    }
+    
+    /* Emoji button */
+    .ql-emoji::after {
+      content: '😀';
+      font-size: 14px;
+    }
+    
+    /* Font family support - Editor content */
+    .ql-font-roboto { font-family: 'Roboto', sans-serif; }
+    .ql-font-open-sans { font-family: 'Open Sans', sans-serif; }
+    .ql-font-lato { font-family: 'Lato', sans-serif; }
+    .ql-font-montserrat { font-family: 'Montserrat', sans-serif; }
+    .ql-font-source-code { font-family: 'Source Code Pro', monospace; }
+    .ql-font-crimson { font-family: 'Crimson Pro', serif; }
+    .ql-font-dm-sans { font-family: 'DM Sans', sans-serif; }
+    
+    .ql-editor .ql-font-roboto { font-family: 'Roboto', sans-serif; }
+    .ql-editor .ql-font-open-sans { font-family: 'Open Sans', sans-serif; }
+    .ql-editor .ql-font-lato { font-family: 'Lato', sans-serif; }
+    .ql-editor .ql-font-montserrat { font-family: 'Montserrat', sans-serif; }
+    .ql-editor .ql-font-source-code { font-family: 'Source Code Pro', monospace; }
+    .ql-editor .ql-font-crimson { font-family: 'Crimson Pro', serif; }
+    .ql-editor .ql-font-dm-sans { font-family: 'DM Sans', sans-serif; }
+    
+    /* Font picker dropdown labels */
+    .ql-snow .ql-picker.ql-font .ql-picker-label::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-item::before {
+      content: 'Sans Serif';
+    }
+    .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="roboto"]::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="roboto"]::before {
+      content: 'Roboto';
+      font-family: 'Roboto', sans-serif;
+    }
+    .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="open-sans"]::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="open-sans"]::before {
+      content: 'Open Sans';
+      font-family: 'Open Sans', sans-serif;
+    }
+    .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="lato"]::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="lato"]::before {
+      content: 'Lato';
+      font-family: 'Lato', sans-serif;
+    }
+    .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="montserrat"]::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="montserrat"]::before {
+      content: 'Montserrat';
+      font-family: 'Montserrat', sans-serif;
+    }
+    .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="source-code"]::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="source-code"]::before {
+      content: 'Source Code';
+      font-family: 'Source Code Pro', monospace;
+    }
+    .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="crimson"]::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="crimson"]::before {
+      content: 'Crimson Pro';
+      font-family: 'Crimson Pro', serif;
+    }
+    .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="dm-sans"]::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="dm-sans"]::before {
+      content: 'DM Sans';
+      font-family: 'DM Sans', sans-serif;
+    }
+    
+    /* Size picker dropdown labels */
+    .ql-snow .ql-picker.ql-size .ql-picker-label::before,
+    .ql-snow .ql-picker.ql-size .ql-picker-item::before {
+      content: 'Normal';
+    }
+    .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="small"]::before,
+    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="small"]::before {
+      content: 'Small';
+    }
+    .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="large"]::before,
+    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="large"]::before {
+      content: 'Large';
+    }
+    .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="huge"]::before,
+    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="huge"]::before {
+      content: 'Huge';
+    }
+    
+    /* Video embed styles */
+    .ql-editor .ql-video {
+      display: block;
+      max-width: 100%;
+      width: 100%;
+      aspect-ratio: 16/9;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+    
+    /* Checklist styles */
+    .ql-editor ul[data-checked="true"] > li::before,
+    .ql-editor ul[data-checked="false"] > li::before {
+      color: #c45d35;
+    }
+    
+    /* Direction RTL */
+    .ql-editor .ql-direction-rtl {
+      direction: rtl;
+      text-align: inherit;
+    }
+    
+    /* Subscript and Superscript */
+    .ql-editor sub {
+      vertical-align: sub;
+      font-size: smaller;
+    }
+    
+    .ql-editor sup {
+      vertical-align: super;
+      font-size: smaller;
+    }
+    
+    /* Size variations */
+    .ql-editor .ql-size-small {
+      font-size: 0.75em;
+    }
+    
+    .ql-editor .ql-size-large {
+      font-size: 1.5em;
+    }
+    
+    .ql-editor .ql-size-huge {
+      font-size: 2.5em;
+    }
+  </style>
+</head>
+<body>
+  <div id="editor-container">
+    <div id="editor"></div>
+  </div>
+
+  <!-- Media Drag Icon (appears on hover) -->
+  <div class="media-drag-icon" id="mediaDragIcon">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <path d="M14 2L2 14M14 2v5M14 2h-5M2 14v-5M2 14h5"/>
+    </svg>
+  </div>
+
+  <!-- Resize Tooltip (shows percentage while dragging) -->
+  <div class="resize-tooltip" id="resizeTooltip">50%</div>
+  
+  <!-- Table Drag Icon (appears on table hover) -->
+  <div class="table-drag-icon" id="tableDragIcon">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <path d="M14 2L2 14M14 2v5M14 2h-5M2 14v-5M2 14h5"/>
+    </svg>
+  </div>
+
+  <!-- Media Resizer -->
+  <div class="media-resizer" id="mediaResizer">
+    <div class="resize-handle nw" data-handle="nw"></div>
+    <div class="resize-handle ne" data-handle="ne"></div>
+    <div class="resize-handle sw" data-handle="sw"></div>
+    <div class="resize-handle se" data-handle="se"></div>
+    <div class="resize-handle n" data-handle="n"></div>
+    <div class="resize-handle s" data-handle="s"></div>
+    <div class="resize-handle e" data-handle="e"></div>
+    <div class="resize-handle w" data-handle="w"></div>
+    <div class="media-toolbar">
+      <div class="media-toolbar-row">
+        <button class="media-align-btn" data-align="left" title="Align left">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 2h12M1 5h8M1 8h12M1 11h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="media-align-btn" data-align="center" title="Center">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 2h12M3 5h8M1 8h12M3 11h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="media-align-btn" data-align="right" title="Align right">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 2h12M5 5h8M1 8h12M5 11h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <div class="media-toolbar-divider"></div>
+        <button class="media-size-btn" data-size="25" title="25% width">25%</button>
+        <button class="media-size-btn" data-size="50" title="50% width">50%</button>
+        <button class="media-size-btn" data-size="75" title="75% width">75%</button>
+        <button class="media-size-btn" data-size="100" title="Full width">100%</button>
+      </div>
+      <div class="media-toolbar-row">
+        <span class="media-size-display" id="mediaSizeDisplay">0 × 0</span>
+        <button class="media-action-btn" id="mediaResetBtn" title="Reset size">
+          <svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 4V1h3M11 8v3H8M1 1l4 4M11 11l-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Reset
+        </button>
+        <button class="media-action-btn media-delete-btn" id="mediaDeleteBtn" title="Delete">
+          <svg width="12" height="12" viewBox="0 0 12 12"><path d="M1.5 3h9M4.5 3V2a1 1 0 011-1h1a1 1 0 011 1v1M9 3v6.5a1 1 0 01-1 1H4a1 1 0 01-1-1V3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quill JS -->
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.js"></script>
+  
+  <!-- Quill Table Better -->
+  <script src="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.js"></script>
+  
+  <script>
+    // Register Table Better module
+    Quill.register({
+      'modules/table-better': QuillTableBetter
+    }, true);
+
+    // Register custom fonts
+    const Font = Quill.import('formats/font');
+    Font.whitelist = ['roboto', 'open-sans', 'lato', 'montserrat', 'source-code', 'crimson', 'dm-sans'];
+    Quill.register(Font, true);
+
+    // Register custom sizes
+    const Size = Quill.import('formats/size');
+    Size.whitelist = ['small', false, 'large', 'huge'];
+    Quill.register(Size, true);
+
+    // Full Toolbar configuration with ALL Quill features
+    const toolbarOptions = {
+      container: [
+        // Text structure - Headers
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+        
+        // Font family
+        [{ 'font': ['', 'roboto', 'open-sans', 'lato', 'montserrat', 'source-code', 'crimson', 'dm-sans'] }],
+        
+        // Font size
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        
+        // Text formatting
+        ['bold', 'italic', 'underline', 'strike'],
+        
+        // Subscript / Superscript
+        [{ 'script': 'sub' }, { 'script': 'super' }],
+        
+        // Colors
+        [{ 'color': [] }, { 'background': [] }],
+        
+        // Lists (ordered, bullet, checklist)
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'list': 'check' }],
+        
+        // Indentation
+        [{ 'indent': '-1' }, { 'indent': '+1' }],
+        
+        // Text alignment
+        [{ 'align': [] }],
+        
+        // Text direction (LTR/RTL)
+        [{ 'direction': 'rtl' }],
+        
+        // Block formats
+        ['blockquote', 'code-block'],
+        
+        // Media and embeds
+        ['link', 'image', 'video'],
+        
+        // Table
+        ['table-better'],
+        
+        // Clear formatting
+        ['clean']
+      ]
+    };
+
+    // Get Delta constructor for clipboard matchers
+    const Delta = Quill.import('delta');
+    
+    // ============================================
+    // Font Style Parsing - Map common fonts to Quill fonts
+    // ============================================
+    const fontFamilyMap = {
+      'roboto': 'roboto',
+      'open sans': 'open-sans',
+      'opensans': 'open-sans',
+      'lato': 'lato',
+      'montserrat': 'montserrat',
+      'source code pro': 'source-code',
+      'sourcecodepro': 'source-code',
+      'crimson pro': 'crimson',
+      'crimsonpro': 'crimson',
+      'crimson text': 'crimson',
+      'dm sans': 'dm-sans',
+      'dmsans': 'dm-sans',
+      // Common fonts to map
+      'arial': 'roboto',
+      'helvetica': 'roboto',
+      'verdana': 'open-sans',
+      'tahoma': 'open-sans',
+      'trebuchet ms': 'montserrat',
+      'georgia': 'crimson',
+      'times': 'crimson',
+      'times new roman': 'crimson',
+      'courier': 'source-code',
+      'courier new': 'source-code',
+      'consolas': 'source-code',
+      'monaco': 'source-code',
+      'menlo': 'source-code'
+    };
+
+    // Map font sizes to Quill size classes
+    function mapFontSize(size) {
+      if (!size) return false;
+      const sizeStr = size.toLowerCase().trim();
+      
+      // Handle px values
+      let pxValue = null;
+      if (sizeStr.endsWith('px')) {
+        pxValue = parseFloat(sizeStr);
+      } else if (sizeStr.endsWith('pt')) {
+        pxValue = parseFloat(sizeStr) * 1.333; // pt to px
+      } else if (sizeStr.endsWith('em')) {
+        pxValue = parseFloat(sizeStr) * 16; // assuming base 16px
+      } else if (sizeStr.endsWith('rem')) {
+        pxValue = parseFloat(sizeStr) * 16;
+      } else if (!isNaN(parseFloat(sizeStr))) {
+        pxValue = parseFloat(sizeStr);
+      }
+      
+      // Handle keyword sizes
+      if (sizeStr === 'small' || sizeStr === 'x-small' || sizeStr === 'xx-small') return 'small';
+      if (sizeStr === 'large' || sizeStr === 'x-large') return 'large';
+      if (sizeStr === 'xx-large' || sizeStr === 'xxx-large') return 'huge';
+      
+      // Map px values to Quill sizes
+      if (pxValue !== null) {
+        if (pxValue <= 12) return 'small';
+        if (pxValue <= 18) return false; // normal
+        if (pxValue <= 24) return 'large';
+        return 'huge';
+      }
+      
+      return false; // normal size
+    }
+
+    // Map font family to Quill font
+    function mapFontFamily(fontFamily) {
+      if (!fontFamily) return false;
+      
+      // Clean and normalize font family
+      const fonts = fontFamily.toLowerCase()
+        .split(',')
+        .map(f => f.trim().replace(/['"]/g, ''));
+      
+      // Try to match each font in the stack
+      for (const font of fonts) {
+        if (fontFamilyMap[font]) {
+          return fontFamilyMap[font];
+        }
+        // Try partial match
+        for (const [key, value] of Object.entries(fontFamilyMap)) {
+          if (font.includes(key) || key.includes(font)) {
+            return value;
+          }
+        }
+      }
+      
+      return false; // default font
+    }
+
+    // Initialize Quill with all modules
+    const editor = new Quill('#editor', {
+      theme: 'snow',
+      placeholder: 'Start writing your story...',
+      modules: {
+        toolbar: toolbarOptions,
+        table: false,
+        'table-better': {
+          language: 'en_US',
+          menus: ['column', 'row', 'merge', 'table', 'cell', 'wrap', 'copy', 'delete'],
+          toolbarTable: true
+        },
+        keyboard: {
+          bindings: QuillTableBetter.keyboardBindings
+        },
+        clipboard: {
+          matchers: [
+            // Match any element with inline styles
+            [Node.ELEMENT_NODE, function(node, delta) {
+              const style = node.style;
+              const formats = {};
+              
+              // Helper to convert RGB to hex
+              function rgbToHex(rgb) {
+                if (!rgb) return null;
+                if (rgb.startsWith('#')) return rgb;
+                const match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                if (match) {
+                  const r = parseInt(match[1]).toString(16).padStart(2, '0');
+                  const g = parseInt(match[2]).toString(16).padStart(2, '0');
+                  const b = parseInt(match[3]).toString(16).padStart(2, '0');
+                  return '#' + r + g + b;
+                }
+                return rgb;
+              }
+              
+              // Parse font-family
+              if (style.fontFamily) {
+                const font = mapFontFamily(style.fontFamily);
+                if (font) formats.font = font;
+              }
+              
+              // Parse font-size
+              if (style.fontSize) {
+                const size = mapFontSize(style.fontSize);
+                if (size) formats.size = size;
+              }
+              
+              // Parse color - normalize to hex
+              if (style.color) {
+                const hexColor = rgbToHex(style.color);
+                if (hexColor) formats.color = hexColor;
+              }
+              
+              // Parse background-color - normalize to hex
+              if (style.backgroundColor) {
+                const hexBg = rgbToHex(style.backgroundColor);
+                if (hexBg) formats.background = hexBg;
+              }
+              
+              // Parse font-weight (bold)
+              if (style.fontWeight) {
+                const weight = style.fontWeight.toString().toLowerCase();
+                if (weight === 'bold' || weight === '700' || weight === '600' || weight === '800' || weight === '900') {
+                  formats.bold = true;
+                }
+              }
+              
+              // Parse font-style (italic)
+              if (style.fontStyle === 'italic') {
+                formats.italic = true;
+              }
+              
+              // Parse text-decoration (underline, strikethrough)
+              if (style.textDecoration) {
+                const decoration = style.textDecoration.toLowerCase();
+                if (decoration.includes('underline')) formats.underline = true;
+                if (decoration.includes('line-through')) formats.strike = true;
+              }
+              
+              // Parse text-align
+              if (style.textAlign && style.textAlign !== 'start' && style.textAlign !== 'left') {
+                formats.align = style.textAlign;
+              }
+              
+              // Apply formats to all ops in the delta
+              if (Object.keys(formats).length > 0) {
+                return delta.compose(new Delta().retain(delta.length(), formats));
+              }
+              
+              return delta;
+            }],
+            // Match <font> tags (legacy HTML)
+            ['FONT', function(node, delta) {
+              const formats = {};
+              
+              // Handle color attribute - normalize to hex
+              if (node.color) {
+                let color = node.color;
+                if (!color.startsWith('#') && !color.startsWith('rgb')) {
+                  // Named color - add # if it looks like hex
+                  if (/^[0-9a-fA-F]{6}$/.test(color)) {
+                    color = '#' + color;
+                  }
+                }
+                formats.color = color;
+              }
+              
+              // Handle face attribute (font family)
+              if (node.face) {
+                const font = mapFontFamily(node.face);
+                if (font) formats.font = font;
+              }
+              
+              // Handle size attribute (1-7)
+              if (node.size) {
+                const size = parseInt(node.size);
+                if (size <= 2) formats.size = 'small';
+                else if (size >= 5) formats.size = 'large';
+                else if (size >= 6) formats.size = 'huge';
+              }
+              
+              if (Object.keys(formats).length > 0) {
+                return delta.compose(new Delta().retain(delta.length(), formats));
+              }
+              return delta;
+            }],
+            // Match <span> with class-based fonts
+            ['SPAN', function(node, delta) {
+              const formats = {};
+              const className = node.className || '';
+              
+              // Check for ql-font-* classes
+              const fontMatch = className.match(/ql-font-(\S+)/);
+              if (fontMatch) {
+                formats.font = fontMatch[1];
+              }
+              
+              // Check for ql-size-* classes
+              const sizeMatch = className.match(/ql-size-(\S+)/);
+              if (sizeMatch) {
+                formats.size = sizeMatch[1];
+              }
+              
+              if (Object.keys(formats).length > 0) {
+                return delta.compose(new Delta().retain(delta.length(), formats));
+              }
+              return delta;
+            }],
+            // Match <td> table cells with fonts/formatting
+            ['TD', function(node, delta) {
+              const formats = {};
+              const className = node.className || '';
+              const style = node.style;
+              
+              // Helper to convert RGB to hex
+              function rgbToHex(rgb) {
+                if (!rgb) return null;
+                if (rgb.startsWith('#')) return rgb;
+                const match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                if (match) {
+                  const r = parseInt(match[1]).toString(16).padStart(2, '0');
+                  const g = parseInt(match[2]).toString(16).padStart(2, '0');
+                  const b = parseInt(match[3]).toString(16).padStart(2, '0');
+                  return '#' + r + g + b;
+                }
+                return rgb;
+              }
+              
+              // Check for ql-font-* classes
+              const fontMatch = className.match(/ql-font-(\S+)/);
+              if (fontMatch) {
+                formats.font = fontMatch[1];
+              }
+              
+              // Check for ql-size-* classes
+              const sizeMatch = className.match(/ql-size-(\S+)/);
+              if (sizeMatch) {
+                formats.size = sizeMatch[1];
+              }
+              
+              // Parse inline font-family
+              if (style.fontFamily) {
+                const font = mapFontFamily(style.fontFamily);
+                if (font) formats.font = font;
+              }
+              
+              // Parse inline font-size
+              if (style.fontSize) {
+                const size = mapFontSize(style.fontSize);
+                if (size) formats.size = size;
+              }
+              
+              // Parse inline color
+              if (style.color) {
+                const hexColor = rgbToHex(style.color);
+                if (hexColor) formats.color = hexColor;
+              }
+              
+              // Parse inline background color
+              if (style.backgroundColor) {
+                const hexBg = rgbToHex(style.backgroundColor);
+                if (hexBg) formats.background = hexBg;
+              }
+              
+              if (Object.keys(formats).length > 0) {
+                return delta.compose(new Delta().retain(delta.length(), formats));
+              }
+              return delta;
+            }],
+            // Match <th> table headers with fonts/formatting
+            ['TH', function(node, delta) {
+              const formats = {};
+              const className = node.className || '';
+              const style = node.style;
+              
+              // Helper to convert RGB to hex
+              function rgbToHex(rgb) {
+                if (!rgb) return null;
+                if (rgb.startsWith('#')) return rgb;
+                const match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                if (match) {
+                  const r = parseInt(match[1]).toString(16).padStart(2, '0');
+                  const g = parseInt(match[2]).toString(16).padStart(2, '0');
+                  const b = parseInt(match[3]).toString(16).padStart(2, '0');
+                  return '#' + r + g + b;
+                }
+                return rgb;
+              }
+              
+              // Check for ql-font-* classes
+              const fontMatch = className.match(/ql-font-(\S+)/);
+              if (fontMatch) {
+                formats.font = fontMatch[1];
+              }
+              
+              // Check for ql-size-* classes
+              const sizeMatch = className.match(/ql-size-(\S+)/);
+              if (sizeMatch) {
+                formats.size = sizeMatch[1];
+              }
+              
+              // Parse inline font-family
+              if (style.fontFamily) {
+                const font = mapFontFamily(style.fontFamily);
+                if (font) formats.font = font;
+              }
+              
+              // Parse inline font-size
+              if (style.fontSize) {
+                const size = mapFontSize(style.fontSize);
+                if (size) formats.size = size;
+              }
+              
+              // Parse inline color
+              if (style.color) {
+                const hexColor = rgbToHex(style.color);
+                if (hexColor) formats.color = hexColor;
+              }
+              
+              // Parse inline background color
+              if (style.backgroundColor) {
+                const hexBg = rgbToHex(style.backgroundColor);
+                if (hexBg) formats.background = hexBg;
+              }
+              
+              if (Object.keys(formats).length > 0) {
+                return delta.compose(new Delta().retain(delta.length(), formats));
+              }
+              return delta;
+            }]
+          ]
+        }
+      }
+    });
+
+    // ============================================
+    // Native Paste Handler - Preserve Font Styles and Colors
+    // ============================================
+    editor.root.addEventListener('paste', function(e) {
+      // Check if clipboard has HTML content
+      const clipboardData = e.clipboardData || window.clipboardData;
+      if (!clipboardData) return;
+      
+      const htmlData = clipboardData.getData('text/html');
+      
+      // Only intercept if we have HTML content with potential font styles or colors
+      if (htmlData && (
+        htmlData.includes('font-family') || 
+        htmlData.includes('font-size') || 
+        htmlData.includes('<font') ||
+        htmlData.includes('color') ||
+        htmlData.includes('background') ||
+        htmlData.includes('style=')
+      )) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Pre-process the HTML to convert font styles and normalize colors
+        let processedHtml = preprocessHtml(htmlData);
+        
+        // Get current selection
+        const range = editor.getSelection(true);
+        const index = range ? range.index : editor.getLength();
+        
+        // Delete selected content if any
+        if (range && range.length > 0) {
+          editor.deleteText(range.index, range.length, Quill.sources.SILENT);
+        }
+        
+        // Convert HTML to Delta for proper format handling
+        const tempContainer = document.createElement('div');
+        tempContainer.innerHTML = processedHtml;
+        const delta = editor.clipboard.convert({ html: processedHtml, text: tempContainer.innerText });
+        
+        // Insert the delta at the current position
+        editor.updateContents(new Delta().retain(index).concat(delta), Quill.sources.USER);
+        
+        // Move cursor to end of pasted content
+        editor.setSelection(index + delta.length(), 0, Quill.sources.SILENT);
+        
+        // Notify Flutter of the content change
+        sendToFlutter({
+          type: 'contentChange',
+          delta: editor.getContents(),
+          html: editor.root.innerHTML,
+          text: editor.getText()
+        });
+      }
+    }, true);
+
+    // ============================================
+    // Selection Preservation for Toolbar Pickers
+    // ============================================
+    let savedSelection = null;
+    
+    // Save selection continuously while editing
+    editor.on('selection-change', function(range, oldRange, source) {
+      if (range && range.length > 0) {
+        // Only save if there's an actual selection (not just cursor)
+        savedSelection = range;
+      } else if (range) {
+        // Save cursor position too
+        savedSelection = range;
+      }
+    });
+    
+    // Override toolbar handlers to restore selection before applying format
+    const toolbar = document.querySelector('.ql-toolbar');
+    if (toolbar) {
+      // Save selection when any toolbar element is clicked
+      toolbar.addEventListener('mousedown', function(e) {
+        const selection = editor.getSelection();
+        if (selection) {
+          savedSelection = selection;
+        }
+      }, true);
+      
+      // For picker items, we need to restore selection BEFORE the format is applied
+      toolbar.addEventListener('mousedown', function(e) {
+        const pickerItem = e.target.closest('.ql-picker-item');
+        if (pickerItem && savedSelection) {
+          // Restore selection immediately (before Quill's click handler)
+          editor.setSelection(savedSelection.index, savedSelection.length, 'silent');
+        }
+      }, false);
+      
+      // Also handle picker labels (when opening dropdown)
+      const pickerLabels = toolbar.querySelectorAll('.ql-picker-label');
+      pickerLabels.forEach(label => {
+        label.addEventListener('mousedown', function(e) {
+          const selection = editor.getSelection();
+          if (selection) {
+            savedSelection = selection;
+          }
+        }, true);
+      });
+    }
+    
+    // Intercept format changes to ensure selection is used
+    const originalFormat = editor.format.bind(editor);
+    editor.format = function(name, value, source) {
+      // If we have a saved selection with length > 0, use it
+      if (savedSelection && savedSelection.length > 0) {
+        const currentSelection = editor.getSelection();
+        if (!currentSelection || currentSelection.length === 0) {
+          editor.setSelection(savedSelection.index, savedSelection.length, 'silent');
+        }
+      }
+      return originalFormat(name, value, source);
+    };
+
+    // Message throttling
+    let lastContentChangeTime = 0;
+    const CONTENT_CHANGE_THROTTLE = 200;
+    let contentChangeTimer = null;
+
+    // Internal function to actually post the message
+    function _postMessage(data) {
+      data.source = 'quill-editor';
+      if (window.parent) {
+        window.parent.postMessage(JSON.stringify(data), '*');
+      }
+    }
+
+    // Send message to Flutter
+    function sendToFlutter(data) {
+      // Immediate send for non-content changes
+      if (data.type !== 'contentChange') {
+        _postMessage(data);
+        return;
+      }
+
+      // Throttle content changes to prevent flooding Flutter
+      // but ALWAYS send the trailing edge (last update)
+      const now = Date.now();
+      const timeRemaining = CONTENT_CHANGE_THROTTLE - (now - lastContentChangeTime);
+
+      if (timeRemaining <= 0) {
+        // Can send immediately
+        if (contentChangeTimer) {
+          clearTimeout(contentChangeTimer);
+          contentChangeTimer = null;
+        }
+        lastContentChangeTime = now;
+        _postMessage(data);
+      } else {
+        // Throttle - schedule for later
+        if (contentChangeTimer) {
+          clearTimeout(contentChangeTimer);
+        }
+        contentChangeTimer = setTimeout(function() {
+          lastContentChangeTime = Date.now();
+          contentChangeTimer = null;
+          _postMessage(data);
+        }, timeRemaining);
+      }
+    }
+    
+    // Force immediate content change notification (bypasses throttle)
+    function sendContentChangeImmediate(html) {
+      // Cancel any pending throttled updates
+      if (contentChangeTimer) {
+        clearTimeout(contentChangeTimer);
+        contentChangeTimer = null;
+      }
+      lastContentChangeTime = Date.now();
+      
+      const data = {
+        type: 'contentChange',
+        delta: editor.getContents(),
+        html: html,
+        text: editor.getText()
+      };
+      
+      console.log('Sending immediate content change, HTML length:', html.length);
+      _postMessage(data);
+    }
+
+    // Listen for messages from Flutter
+    window.addEventListener('message', function(event) {
+      if (event.source !== window.parent) return;
+
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'command') {
+          handleCommand(data);
+        }
+      } catch (e) {
+        console.log('Message parse error:', e);
+      }
+    });
+
+    // ============================================
+    // Pre-process HTML - Convert inline styles to Quill classes
+    // ============================================
+    
+    // Normalize color to hex format for consistency
+    function normalizeColor(color) {
+      if (!color) return null;
+      color = color.trim();
+      
+      // Already hex
+      if (color.startsWith('#')) return color;
+      
+      // Named colors - let browser convert
+      const tempEl = document.createElement('div');
+      tempEl.style.color = color;
+      document.body.appendChild(tempEl);
+      const computed = getComputedStyle(tempEl).color;
+      document.body.removeChild(tempEl);
+      
+      // Convert rgb/rgba to hex
+      const match = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (match) {
+        const r = parseInt(match[1]).toString(16).padStart(2, '0');
+        const g = parseInt(match[2]).toString(16).padStart(2, '0');
+        const b = parseInt(match[3]).toString(16).padStart(2, '0');
+        return '#' + r + g + b;
+      }
+      
+      return color;
+    }
+    
+    function preprocessHtml(html) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString('<div>' + html + '</div>', 'text/html');
+      const container = doc.body.firstChild;
+      
+      // Process all elements with inline styles
+      container.querySelectorAll('*').forEach(el => {
+        const style = el.style;
+        const classes = [];
+        let fontClass = null;
+        let sizeClass = null;
+        let colorStyle = null;
+        let bgColorStyle = null;
+        
+        // Convert font-family to ql-font-* class
+        if (style.fontFamily) {
+          const font = mapFontFamily(style.fontFamily);
+          if (font) {
+            fontClass = 'ql-font-' + font;
+            classes.push(fontClass);
+            style.removeProperty('font-family');
+          }
+        }
+        
+        // Convert font-size to ql-size-* class
+        if (style.fontSize) {
+          const size = mapFontSize(style.fontSize);
+          if (size) {
+            sizeClass = 'ql-size-' + size;
+            classes.push(sizeClass);
+            style.removeProperty('font-size');
+          }
+        }
+        
+        // Normalize and preserve color
+        if (style.color) {
+          const normalizedColor = normalizeColor(style.color);
+          if (normalizedColor) {
+            colorStyle = normalizedColor;
+            style.color = normalizedColor;
+          }
+        }
+        
+        // Normalize and preserve background color
+        if (style.backgroundColor) {
+          const normalizedBg = normalizeColor(style.backgroundColor);
+          if (normalizedBg) {
+            bgColorStyle = normalizedBg;
+            style.backgroundColor = normalizedBg;
+          }
+        }
+        
+        // Add classes if any
+        if (classes.length > 0) {
+          el.className = (el.className ? el.className + ' ' : '') + classes.join(' ');
+        }
+        
+        // Special handling for table cells (TD, TH) - wrap text content in span with formatting
+        if ((el.tagName === 'TD' || el.tagName === 'TH') && (fontClass || sizeClass || colorStyle)) {
+          // Check if cell has direct text children or just a <p> with text
+          const hasFormattedChildren = el.querySelector('span[class*="ql-font"], span[class*="ql-size"]');
+          
+          if (!hasFormattedChildren) {
+            // Wrap content in span(s) to preserve formatting
+            const wrapContent = (parent) => {
+              const childNodes = Array.from(parent.childNodes);
+              childNodes.forEach(child => {
+                if (child.nodeType === Node.TEXT_NODE && child.textContent.trim()) {
+                  // Wrap text node in span with formatting
+                  const span = doc.createElement('span');
+                  if (fontClass) span.classList.add(fontClass);
+                  if (sizeClass) span.classList.add(sizeClass);
+                  if (colorStyle) span.style.color = colorStyle;
+                  span.textContent = child.textContent;
+                  child.replaceWith(span);
+                } else if (child.nodeType === Node.ELEMENT_NODE) {
+                  // For element children (like <p>), add classes to them or their text content
+                  if (child.tagName === 'P' || child.tagName === 'DIV') {
+                    wrapContent(child);
+                  } else if (child.tagName === 'SPAN' && !child.className.includes('ql-font') && !child.className.includes('ql-size')) {
+                    // Add formatting to existing spans without font classes
+                    if (fontClass && !child.classList.contains(fontClass)) child.classList.add(fontClass);
+                    if (sizeClass && !child.classList.contains(sizeClass)) child.classList.add(sizeClass);
+                    if (colorStyle && !child.style.color) child.style.color = colorStyle;
+                  }
+                }
+              });
+            };
+            wrapContent(el);
+          }
+        }
+      });
+      
+      // Handle <font> tags - convert to spans with proper styling
+      container.querySelectorAll('font').forEach(font => {
+        const span = doc.createElement('span');
+        span.innerHTML = font.innerHTML;
+        
+        // Copy color attribute
+        if (font.color) {
+          const normalizedColor = normalizeColor(font.color);
+          if (normalizedColor) {
+            span.style.color = normalizedColor;
+          }
+        }
+        
+        // Copy face attribute (font family)
+        if (font.face) {
+          const mappedFont = mapFontFamily(font.face);
+          if (mappedFont) {
+            span.classList.add('ql-font-' + mappedFont);
+          }
+        }
+        
+        // Copy size attribute
+        if (font.size) {
+          const size = parseInt(font.size);
+          if (size <= 2) span.classList.add('ql-size-small');
+          else if (size >= 5) span.classList.add('ql-size-large');
+          else if (size >= 6) span.classList.add('ql-size-huge');
+        }
+        
+        font.parentNode.replaceChild(span, font);
+      });
+      
+      return container.innerHTML;
+    }
+    
+    // Extract body content from full HTML document
+    function extractBodyContent(html) {
+      if (html.includes('<!DOCTYPE') || html.includes('<html')) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const body = doc.body;
+        if (body) {
+          // Also extract any style definitions from head
+          const styleContent = doc.head ? doc.head.innerHTML : '';
+          return body.innerHTML;
+        }
+      }
+      return html;
+    }
+
+    // Handle commands from Flutter
+    function handleCommand(data) {
+      switch (data.action) {
+        case 'setContents':
+          if (data.delta) {
+            editor.setContents(data.delta, Quill.sources.SILENT);
+          }
+          break;
+
+        case 'setHTML':
+          if (data.html) {
+            // Extract body content if it's a full HTML document
+            let htmlContent = extractBodyContent(data.html);
+            
+            // Pre-process to convert inline font styles to Quill classes and normalize colors
+            htmlContent = preprocessHtml(htmlContent);
+            
+            // Convert HTML to Delta for proper format handling (including colors)
+            const tempContainer = document.createElement('div');
+            tempContainer.innerHTML = htmlContent;
+            const delta = editor.clipboard.convert({ html: htmlContent, text: tempContainer.innerText });
+            
+            if (data.replace !== false) {
+              // Replace all content
+              editor.setContents(delta, Quill.sources.USER);
+            } else {
+              // Insert at current position
+              const range = editor.getSelection();
+              const index = range ? range.index : editor.getLength();
+              editor.updateContents(new Delta().retain(index).concat(delta), Quill.sources.USER);
+            }
+            
+            // Notify Flutter of the content change
+            sendToFlutter({
+              type: 'contentChange',
+              delta: editor.getContents(),
+              html: editor.root.innerHTML,
+              text: editor.getText()
+            });
+          }
+          break;
+
+        case 'insertText':
+          if (data.text) {
+            const selection = editor.getSelection(true);
+            if (selection) {
+              editor.insertText(selection.index, data.text, Quill.sources.USER);
+              editor.setSelection(selection.index + data.text.length);
+            }
+          }
+          break;
+
+        case 'insertHtml':
+          if (data.html) {
+            // Extract body content if it's a full HTML document
+            let htmlContent = extractBodyContent(data.html);
+            
+            // Pre-process to convert inline font styles to Quill classes and normalize colors
+            htmlContent = preprocessHtml(htmlContent);
+            
+            // Convert HTML to Delta for proper format handling (including colors)
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            const insertDelta = editor.clipboard.convert({ html: htmlContent, text: tempDiv.innerText });
+            
+            if (data.replace) {
+              // Replace all content
+              editor.setContents(insertDelta, Quill.sources.USER);
+            } else {
+              // Insert at current position
+              const range = editor.getSelection();
+              const index = range ? range.index : editor.getLength();
+              editor.updateContents(new Delta().retain(index).concat(insertDelta), Quill.sources.USER);
+            }
+            
+            // Notify Flutter of the content change
+            sendToFlutter({
+              type: 'contentChange',
+              delta: editor.getContents(),
+              html: editor.root.innerHTML,
+              text: editor.getText()
+            });
+          }
+          break;
+
+        case 'getContents':
+          sendToFlutter({
+            type: 'response',
+            action: 'getContents',
+            delta: editor.getContents(),
+            html: editor.root.innerHTML,
+            text: editor.getText()
+          });
+          break;
+
+        case 'clear':
+          editor.setContents([], Quill.sources.USER);
+          // Also notify Flutter immediately since setContents may not trigger text-change
+          sendToFlutter({
+            type: 'contentChange',
+            delta: editor.getContents(),
+            html: editor.root.innerHTML,
+            text: editor.getText()
+          });
+          break;
+
+        case 'focus':
+          editor.focus();
+          break;
+
+        case 'setZoom':
+          if (data.zoom !== undefined) {
+            const zoomLevel = Math.max(0.5, Math.min(3.0, data.zoom));
+            const editor = document.querySelector('.ql-editor');
+            if (editor) {
+              editor.style.transform = `scale(${zoomLevel})`;
+              // Adjust container width to prevent horizontal scroll
+              editor.style.width = `${100 / zoomLevel}%`;
+            }
+            sendToFlutter({
+              type: 'zoomChange',
+              zoom: zoomLevel
+            });
+          }
+          break;
+      }
+    }
+
+    // Listen for content changes
+    editor.on('text-change', function(delta, oldDelta, source) {
+      if (source === 'user') {
+        sendToFlutter({
+          type: 'contentChange',
+          delta: editor.getContents(),
+          html: editor.root.innerHTML,
+          text: editor.getText()
+        });
+      }
+    });
+
+    // ============================================
+    // Media Resize Functionality
+    // ============================================
+    
+    // State
+    let selectedMedia = null;
+    let originalMediaWidth = 0;
+    let originalMediaHeight = 0;
+    let isResizing = false;
+    let resizeHandle = null;
+    let resizeStartX = 0;
+    let resizeStartY = 0;
+    let resizeStartWidth = 0;
+    let resizeStartHeight = 0;
+    
+    // DOM Elements
+    const mediaResizer = document.getElementById('mediaResizer');
+    const mediaSizeDisplay = document.getElementById('mediaSizeDisplay');
+    const mediaAlignBtns = document.querySelectorAll('.media-align-btn');
+    const mediaSizeBtns = document.querySelectorAll('.media-size-btn');
+    const mediaResetBtn = document.getElementById('mediaResetBtn');
+    const mediaDeleteBtn = document.getElementById('mediaDeleteBtn');
+    const mediaDragIcon = document.getElementById('mediaDragIcon');
+    const resizeTooltip = document.getElementById('resizeTooltip');
+    
+    let hoveredMedia = null;
+    let isDraggingResize = false;
+    
+    // Check if element is resizable (images, videos, iframes only - NOT tables)
+    function isResizableMedia(el) {
+      if (!el) return false;
+      const tagName = el.tagName.toUpperCase();
+      return tagName === 'IMG' || tagName === 'IFRAME' || tagName === 'VIDEO';
+    }
+    
+    // Get the alignable element (for tables, might need the wrapper)
+    function getAlignableElement(el) {
+      if (!el) return null;
+      const tagName = el.tagName.toUpperCase();
+      
+      // For tables, check if there's a wrapper
+      if (tagName === 'TABLE') {
+        const wrapper = el.closest('.ql-table-wrapper');
+        return wrapper || el;
+      }
+      
+      return el;
+    }
+    
+    // Position drag icon on media element
+    function positionDragIcon(media) {
+      if (!media) return;
+      // Use requestAnimationFrame for smooth positioning
+      requestAnimationFrame(() => {
+        const rect = media.getBoundingClientRect();
+        mediaDragIcon.style.left = `${rect.right - 34}px`;
+        mediaDragIcon.style.top = `${rect.bottom - 34}px`;
+      });
+    }
+    
+    // Show drag icon on media hover
+    function showDragIcon(media) {
+      if (selectedMedia === media) return; // Don't show if already selected
+      hoveredMedia = media;
+      positionDragIcon(media);
+      mediaDragIcon.classList.add('visible');
+    }
+    
+    // Hide drag icon
+    function hideDragIcon() {
+      if (!isDraggingResize) {
+        hoveredMedia = null;
+        mediaDragIcon.classList.remove('visible');
+      }
+    }
+    
+    // Select media for resizing
+    function selectMedia(media) {
+      if (selectedMedia) {
+        selectedMedia.classList.remove('selected');
+      }
+      
+      selectedMedia = media;
+      media.classList.add('selected');
+      
+      if (media.tagName === 'IMG') {
+        originalMediaWidth = media.naturalWidth || media.width;
+        originalMediaHeight = media.naturalHeight || media.height;
+      } else if (media.tagName === 'TABLE') {
+        // For tables, get the actual table dimensions
+        originalMediaWidth = media.offsetWidth;
+        originalMediaHeight = media.offsetHeight;
+      } else {
+        originalMediaWidth = media.offsetWidth;
+        originalMediaHeight = media.offsetHeight;
+      }
+      
+      // Use requestAnimationFrame for layout stability
+      requestAnimationFrame(() => {
+        positionMediaResizer(media);
+        mediaResizer.classList.add('active');
+        updateMediaSizeDisplay();
+        updateAlignmentButtons();
+        updateSizeButtons();
+      });
+    }
+    
+    // Deselect media
+    function deselectMedia() {
+      if (selectedMedia) {
+        selectedMedia.classList.remove('selected');
+        selectedMedia = null;
+      }
+      mediaResizer.classList.remove('active');
+      hideDragIcon();
+    }
+    
+    // Position resizer overlay - use requestAnimationFrame for smooth updates
+    function positionMediaResizer(media) {
+      if (!media) return;
+      const rect = media.getBoundingClientRect();
+      
+      // Ensure we have valid dimensions before positioning
+      if (rect.width === 0 || rect.height === 0) return;
+      
+      mediaResizer.style.left = `${rect.left}px`;
+      mediaResizer.style.top = `${rect.top}px`;
+      mediaResizer.style.width = `${rect.width}px`;
+      mediaResizer.style.height = `${rect.height}px`;
+    }
+    
+    // Update size display
+    // Consistent editor content width calculation
+    function getEditorContentWidth() {
+      return editor.root.clientWidth - 48; // Account for padding
+    }
+    
+    function updateMediaSizeDisplay() {
+      if (!selectedMedia) return;
+      const width = selectedMedia.offsetWidth || selectedMedia.width;
+      const height = selectedMedia.offsetHeight || selectedMedia.height;
+      const editorWidth = getEditorContentWidth();
+      const percent = Math.round((width / editorWidth) * 100);
+      
+      // Show both pixel dimensions and percentage
+      mediaSizeDisplay.textContent = `${Math.round(width)} × ${Math.round(height)} px (${percent}%)`;
+    }
+    
+    // Update alignment buttons
+    function updateAlignmentButtons() {
+      if (!selectedMedia) return;
+      mediaAlignBtns.forEach(btn => {
+        const align = btn.dataset.align;
+        btn.classList.toggle('active', selectedMedia.classList.contains(`align-${align}`));
+      });
+    }
+    
+    // Update size buttons
+    function updateSizeButtons() {
+      if (!selectedMedia) return;
+      const editorWidth = getEditorContentWidth();
+      const currentWidth = selectedMedia.offsetWidth || selectedMedia.width;
+      const currentPercent = Math.round((currentWidth / editorWidth) * 100);
+      
+      mediaSizeBtns.forEach(btn => {
+        const size = parseInt(btn.dataset.size);
+        btn.classList.toggle('active', Math.abs(currentPercent - size) < 5);
+      });
+    }
+    
+    // Handle resize
+    // Handle media resize with smooth updates
+    let resizeAnimationFrame = null;
+    
+    function handleMediaResize(e) {
+      if ((!isResizing && !isDraggingResize) || !selectedMedia) return;
+      
+      // Cancel any pending animation frame for smoother updates
+      if (resizeAnimationFrame) {
+        cancelAnimationFrame(resizeAnimationFrame);
+      }
+      
+      resizeAnimationFrame = requestAnimationFrame(() => {
+        const dx = e.clientX - resizeStartX;
+        const dy = e.clientY - resizeStartY;
+        
+        const editorWidth = getEditorContentWidth();
+        const aspectRatio = resizeStartWidth / resizeStartHeight;
+        const isTable = selectedMedia.tagName === 'TABLE';
+        
+        let newWidth = resizeStartWidth;
+        let newHeight = resizeStartHeight;
+        
+        // Tables don't maintain aspect ratio, other media does
+        switch (resizeHandle) {
+          case 'se': case 'e':
+            newWidth = resizeStartWidth + dx;
+            if (!isTable) newHeight = newWidth / aspectRatio;
+            break;
+          case 'sw': case 'w':
+            newWidth = resizeStartWidth - dx;
+            if (!isTable) newHeight = newWidth / aspectRatio;
+            break;
+          case 'ne':
+            newWidth = resizeStartWidth + dx;
+            if (!isTable) newHeight = newWidth / aspectRatio;
+            break;
+          case 'nw':
+            newWidth = resizeStartWidth - dx;
+            if (!isTable) newHeight = newWidth / aspectRatio;
+            break;
+          case 'n':
+            if (!isTable) {
+              newHeight = resizeStartHeight - dy;
+              newWidth = newHeight * aspectRatio;
+            }
+            break;
+          case 's':
+            if (!isTable) {
+              newHeight = resizeStartHeight + dy;
+              newWidth = newHeight * aspectRatio;
+            }
+            break;
+        }
+        
+        // Clamp to min/max sizes
+        const minSize = 50;
+        newWidth = Math.max(minSize, Math.min(editorWidth, newWidth));
+        
+        if (!isTable) {
+          newHeight = Math.max(minSize, newWidth / aspectRatio);
+        }
+        
+        // Calculate percentage immediately for display
+        const currentPercent = Math.round((newWidth / editorWidth) * 100);
+        
+        // Apply size changes - only width for tables
+        selectedMedia.style.width = `${newWidth}px`;
+        if (!isTable) {
+          selectedMedia.style.height = `${newHeight}px`;
+        } else {
+          selectedMedia.style.height = 'auto';
+        }
+        
+        // Update size display immediately with percentage
+        const height = isTable ? selectedMedia.offsetHeight : Math.round(newHeight);
+        mediaSizeDisplay.textContent = `${Math.round(newWidth)} × ${height} px (${currentPercent}%)`;
+        
+        // Show floating tooltip near cursor
+        resizeTooltip.textContent = `${currentPercent}%`;
+        resizeTooltip.style.left = `${e.clientX}px`;
+        resizeTooltip.style.top = `${e.clientY - 10}px`;
+        resizeTooltip.classList.add('visible');
+        
+        // Position resizer to match the new size
+        positionMediaResizer(selectedMedia);
+        
+        updateSizeButtons();
+      });
+    }
+    
+    // Set alignment with proper layout handling
+    function setMediaAlignment(align) {
+      if (!selectedMedia) return;
+      
+      // For tables, align both the table and its wrapper if present
+      const elementsToAlign = [selectedMedia];
+      if (selectedMedia.tagName === 'TABLE') {
+        const wrapper = selectedMedia.closest('.ql-table-wrapper');
+        if (wrapper) {
+          elementsToAlign.push(wrapper);
+        }
+      }
+      
+      elementsToAlign.forEach(el => {
+        // Remove existing alignment classes and inline styles
+        el.classList.remove('align-left', 'align-center', 'align-right');
+        el.style.float = '';
+        el.style.marginLeft = '';
+        el.style.marginRight = '';
+        
+        // Apply new alignment class
+        el.classList.add(`align-${align}`);
+        
+        // For centered elements, ensure proper display
+        if (align === 'center') {
+          el.style.display = el.tagName === 'TABLE' ? 'table' : 'block';
+          el.style.marginLeft = 'auto';
+          el.style.marginRight = 'auto';
+        } else if (align === 'left') {
+          el.style.float = 'left';
+          el.style.marginRight = '16px';
+        } else if (align === 'right') {
+          el.style.float = 'right';
+          el.style.marginLeft = '16px';
+        }
+      });
+      
+      updateAlignmentButtons();
+      
+      // Notify about content change after alignment
+      sendToFlutter({
+        type: 'contentChange',
+        delta: editor.getContents(),
+        html: editor.root.innerHTML,
+        text: editor.getText()
+      });
+      
+      // Wait for layout to settle before repositioning
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          positionMediaResizer(selectedMedia);
+        });
+      });
+    }
+    
+    // Set size by percentage
+    function setMediaSizePercent(percent) {
+      if (!selectedMedia) return;
+      
+      const editorWidth = getEditorContentWidth();
+      const newWidth = (editorWidth * percent) / 100;
+      const isTable = selectedMedia.tagName === 'TABLE';
+      
+      selectedMedia.style.width = `${newWidth}px`;
+      
+      // Only set height for non-tables (they maintain aspect ratio)
+      if (!isTable) {
+        const aspectRatio = (selectedMedia.offsetWidth || selectedMedia.width) / 
+                           (selectedMedia.offsetHeight || selectedMedia.height);
+        const newHeight = newWidth / aspectRatio;
+        selectedMedia.style.height = `${newHeight}px`;
+      } else {
+        selectedMedia.style.height = 'auto';
+      }
+      
+      // Wait for layout to settle before repositioning
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          positionMediaResizer(selectedMedia);
+          updateMediaSizeDisplay();
+        });
+      });
+      updateSizeButtons();
+      
+      // Notify about content change
+      sendToFlutter({
+        type: 'contentChange',
+        delta: editor.getContents(),
+        html: editor.root.innerHTML,
+        text: editor.getText()
+      });
+    }
+    
+    // Reset size
+    function resetMediaSize() {
+      if (!selectedMedia || !originalMediaWidth) return;
+      
+      const maxWidth = getEditorContentWidth();
+      let newWidth = originalMediaWidth;
+      let newHeight = originalMediaHeight;
+      const isTable = selectedMedia.tagName === 'TABLE';
+      
+      if (newWidth > maxWidth) {
+        const scale = maxWidth / newWidth;
+        newWidth = maxWidth;
+        if (!isTable) {
+          newHeight = originalMediaHeight * scale;
+        }
+      }
+      
+      selectedMedia.style.width = `${newWidth}px`;
+      if (!isTable) {
+        selectedMedia.style.height = `${newHeight}px`;
+      } else {
+        selectedMedia.style.height = 'auto';
+      }
+      
+      // Wait for layout to settle before repositioning
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          positionMediaResizer(selectedMedia);
+          updateMediaSizeDisplay();
+        });
+      });
+      updateSizeButtons();
+      
+      // Notify about content change
+      sendToFlutter({
+        type: 'contentChange',
+        delta: editor.getContents(),
+        html: editor.root.innerHTML,
+        text: editor.getText()
+      });
+    }
+    
+    // Delete media
+    function deleteSelectedMedia() {
+      if (!selectedMedia) return;
+      
+      const blot = Quill.find(selectedMedia);
+      if (blot) {
+        const index = editor.getIndex(blot);
+        editor.deleteText(index, 1, 'user');
+      } else {
+        selectedMedia.remove();
+      }
+      
+      deselectMedia();
+      sendToFlutter({
+        type: 'contentChange',
+        delta: editor.getContents(),
+        html: editor.root.innerHTML,
+        text: editor.getText()
+      });
+    }
+    
+    // Event Listeners
+    
+    // Show drag icon on media hover (images, videos, iframes only)
+    editor.root.addEventListener('mouseover', (e) => {
+      const targetMedia = e.target;
+      
+      if (isResizableMedia(targetMedia) && !selectedMedia) {
+        showDragIcon(targetMedia);
+      }
+    });
+    
+    editor.root.addEventListener('mouseout', (e) => {
+      const targetMedia = e.target;
+      
+      if (isResizableMedia(targetMedia)) {
+        // Check if mouse moved to drag icon
+        const toElement = e.relatedTarget;
+        if (toElement !== mediaDragIcon && !mediaDragIcon.contains(toElement)) {
+          hideDragIcon();
+        }
+      }
+    });
+    
+    // Keep drag icon visible when hovering over it
+    mediaDragIcon.addEventListener('mouseenter', () => {
+      if (hoveredMedia) {
+        mediaDragIcon.classList.add('visible');
+      }
+    });
+    
+    mediaDragIcon.addEventListener('mouseleave', () => {
+      if (!isDraggingResize && !selectedMedia) {
+        hideDragIcon();
+      }
+    });
+    
+    // Drag icon mousedown - start resize
+    mediaDragIcon.addEventListener('mousedown', (e) => {
+      if (!hoveredMedia && !selectedMedia) return;
+      
+      const targetMedia = selectedMedia || hoveredMedia;
+      if (!selectedMedia) {
+        selectMedia(targetMedia);
+      }
+      
+      isDraggingResize = true;
+      resizeHandle = 'se';
+      resizeStartX = e.clientX;
+      resizeStartY = e.clientY;
+      resizeStartWidth = targetMedia.offsetWidth;
+      resizeStartHeight = targetMedia.offsetHeight;
+      
+      mediaDragIcon.classList.remove('visible');
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    
+    // Handle clicks on media (images, videos, iframes only)
+    editor.root.addEventListener('click', (e) => {
+      const targetMedia = e.target;
+      
+      if (isResizableMedia(targetMedia)) {
+        e.preventDefault();
+        e.stopPropagation();
+        selectMedia(targetMedia);
+        hideDragIcon();
+      } else if (!e.target.closest('.media-resizer') && !e.target.closest('.media-drag-icon')) {
+        deselectMedia();
+      }
+    });
+    
+    editor.root.addEventListener('mousedown', (e) => {
+      if (e.target.tagName === 'VIDEO' || e.target.tagName === 'IFRAME') {
+        e.preventDefault();
+      }
+    });
+    
+    editor.root.addEventListener('dblclick', (e) => {
+      if (e.target.tagName === 'VIDEO') {
+        if (e.target.paused) {
+          e.target.play();
+        } else {
+          e.target.pause();
+        }
+      }
+    });
+    
+    // ============================================
+    // Drag & Drop - Preserve Media Properties in Table Cells
+    // ============================================
+    let draggedMediaProperties = null;
+    
+    // Capture media properties before drag starts
+    editor.root.addEventListener('dragstart', (e) => {
+      const target = e.target;
+      if (isResizableMedia(target) && target.tagName !== 'TABLE') {
+        // Store all relevant properties
+        draggedMediaProperties = {
+          tagName: target.tagName,
+          width: target.style.width || target.getAttribute('width'),
+          height: target.style.height || target.getAttribute('height'),
+          className: target.className,
+          controls: target.hasAttribute('controls'),
+          autoplay: target.hasAttribute('autoplay'),
+          muted: target.hasAttribute('muted'),
+          loop: target.hasAttribute('loop'),
+          src: target.src,
+          poster: target.poster,
+          alignment: target.classList.contains('align-left') ? 'left' : 
+                     target.classList.contains('align-center') ? 'center' : 
+                     target.classList.contains('align-right') ? 'right' : null,
+          // Store parent info if inside table
+          wasInTableCell: target.closest('td, th') !== null,
+          parentCell: target.closest('td, th')
+        };
+        console.log('Drag start - stored properties:', draggedMediaProperties);
+      }
+    });
+    
+    // Restore media properties after drop
+    editor.root.addEventListener('drop', (e) => {
+      if (draggedMediaProperties) {
+        // Use setTimeout to let the drop complete first
+        setTimeout(() => {
+          // Find the newly inserted media element
+          const mediaElements = editor.root.querySelectorAll('img, video, iframe');
+          mediaElements.forEach(media => {
+            // Check if this is a recently dropped element (might not have our properties)
+            const hasWidth = media.style.width || media.getAttribute('width');
+            const hasAlignment = media.classList.contains('align-left') || 
+                                media.classList.contains('align-center') || 
+                                media.classList.contains('align-right');
+            
+            // If it's the same src and missing our properties, restore them
+            if (media.src === draggedMediaProperties.src) {
+              // Restore dimensions
+              if (draggedMediaProperties.width && !hasWidth) {
+                media.style.width = draggedMediaProperties.width;
+              }
+              if (draggedMediaProperties.height) {
+                media.style.height = draggedMediaProperties.height;
+              }
+              
+              // Restore alignment classes
+              if (draggedMediaProperties.alignment && !hasAlignment) {
+                media.classList.remove('align-left', 'align-center', 'align-right');
+                media.classList.add('align-' + draggedMediaProperties.alignment);
+              }
+              
+              // Restore video-specific attributes
+              if (media.tagName === 'VIDEO') {
+                if (draggedMediaProperties.controls) media.setAttribute('controls', '');
+                if (draggedMediaProperties.autoplay) media.setAttribute('autoplay', '');
+                if (draggedMediaProperties.muted) media.setAttribute('muted', '');
+                if (draggedMediaProperties.loop) media.setAttribute('loop', '');
+                if (draggedMediaProperties.poster) media.poster = draggedMediaProperties.poster;
+              }
+              
+              // Restore custom classes (like ql-font-*, ql-size-*)
+              const preserveClasses = ['ql-font-', 'ql-size-', 'align-'];
+              if (draggedMediaProperties.className) {
+                draggedMediaProperties.className.split(' ').forEach(cls => {
+                  if (preserveClasses.some(prefix => cls.startsWith(prefix))) {
+                    if (!media.classList.contains(cls)) {
+                      media.classList.add(cls);
+                    }
+                  }
+                });
+              }
+              
+              console.log('Drop - restored properties to:', media);
+            }
+          });
+          
+          // Notify Flutter of the content change
+          sendToFlutter({
+            type: 'contentChange',
+            delta: editor.getContents(),
+            html: editor.root.innerHTML,
+            text: editor.getText()
+          });
+          
+          draggedMediaProperties = null;
+        }, 100);
+      }
+    });
+    
+    // Clear properties if drag is cancelled
+    editor.root.addEventListener('dragend', (e) => {
+      // Give a short delay before clearing in case drop handler needs it
+      setTimeout(() => {
+        draggedMediaProperties = null;
+      }, 200);
+    });
+    
+    // ============================================
+    // MutationObserver - Ensure media in table cells retains properties
+    // ============================================
+    const mediaObserver = new MutationObserver((mutations) => {
+      mutations.forEach(mutation => {
+        if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              // Check if a media element was added to a table cell
+              const tableCells = node.querySelectorAll ? node.querySelectorAll('td img, td video, td iframe, th img, th video, th iframe') : [];
+              tableCells.forEach(media => {
+                // Ensure video elements have controls
+                if (media.tagName === 'VIDEO' && !media.hasAttribute('controls')) {
+                  media.setAttribute('controls', '');
+                }
+              });
+              
+              // Also check if the node itself is media in a table cell
+              if ((node.tagName === 'IMG' || node.tagName === 'VIDEO' || node.tagName === 'IFRAME') && 
+                  node.closest('td, th')) {
+                if (node.tagName === 'VIDEO' && !node.hasAttribute('controls')) {
+                  node.setAttribute('controls', '');
+                }
+              }
+            }
+          });
+        }
+      });
+    });
+    
+    // Start observing the editor for changes
+    mediaObserver.observe(editor.root, {
+      childList: true,
+      subtree: true
+    });
+    
+    // ============================================
+    // Table Resize with Percentage Display
+    // ============================================
+    const tableDragIcon = document.getElementById('tableDragIcon');
+    let hoveredTable = null;
+    let isDraggingTable = false;
+    let tableResizeStartX = 0;
+    let tableResizeStartWidth = 0;
+    let resizingTable = null;
+    
+    // Position table drag icon
+    function positionTableDragIcon(table) {
+      if (!table) return;
+      requestAnimationFrame(() => {
+        const rect = table.getBoundingClientRect();
+        tableDragIcon.style.left = `${rect.right - 34}px`;
+        tableDragIcon.style.top = `${rect.bottom - 34}px`;
+      });
+    }
+    
+    // Show table drag icon
+    function showTableDragIcon(table) {
+      hoveredTable = table;
+      positionTableDragIcon(table);
+      tableDragIcon.classList.add('visible');
+    }
+    
+    // Hide table drag icon
+    function hideTableDragIcon() {
+      if (!isDraggingTable) {
+        hoveredTable = null;
+        tableDragIcon.classList.remove('visible');
+      }
+    }
+    
+    // Get table percentage width
+    function getTablePercent(table) {
+      const editorWidth = getEditorContentWidth();
+      const tableWidth = table.offsetWidth;
+      return Math.round((tableWidth / editorWidth) * 100);
+    }
+    
+    // Set table width by percentage
+    function setTableWidthPercent(table, percent) {
+      const editorWidth = getEditorContentWidth();
+      const newWidth = (editorWidth * percent) / 100;
+      table.style.width = `${newWidth}px`;
+      table.setAttribute('data-width-percent', percent);
+      
+      // Also update wrapper if present
+      const wrapper = table.closest('.ql-table-wrapper');
+      if (wrapper) {
+        wrapper.style.width = `${newWidth}px`;
+      }
+    }
+    
+    // Handle table resize
+    function handleTableResize(e) {
+      if (!isDraggingTable || !resizingTable) return;
+      
+      const dx = e.clientX - tableResizeStartX;
+      const editorWidth = getEditorContentWidth();
+      
+      let newWidth = tableResizeStartWidth + dx;
+      
+      // Constrain to editor width
+      newWidth = Math.max(100, Math.min(newWidth, editorWidth));
+      
+      // Calculate percentage
+      const percent = Math.round((newWidth / editorWidth) * 100);
+      
+      // Update table width
+      resizingTable.style.width = `${newWidth}px`;
+      
+      // Update wrapper if present
+      const wrapper = resizingTable.closest('.ql-table-wrapper');
+      if (wrapper) {
+        wrapper.style.width = `${newWidth}px`;
+      }
+      
+      // Show percentage tooltip
+      resizeTooltip.textContent = `${percent}%`;
+      resizeTooltip.style.left = `${e.clientX}px`;
+      resizeTooltip.style.top = `${e.clientY - 10}px`;
+      resizeTooltip.classList.add('visible');
+    }
+    
+    // Table hover events
+    editor.root.addEventListener('mouseover', (e) => {
+      // Check if hovering over table or table cell
+      const table = e.target.tagName === 'TABLE' ? e.target : e.target.closest('table');
+      if (table && !isDraggingTable) {
+        showTableDragIcon(table);
+      }
+    }, true);
+    
+    editor.root.addEventListener('mouseout', (e) => {
+      const table = e.target.tagName === 'TABLE' ? e.target : e.target.closest('table');
+      if (table) {
+        const toElement = e.relatedTarget;
+        if (toElement !== tableDragIcon && !tableDragIcon.contains(toElement) && !table.contains(toElement)) {
+          hideTableDragIcon();
+        }
+      }
+    }, true);
+    
+    // Keep table drag icon visible when hovering over it
+    tableDragIcon.addEventListener('mouseenter', () => {
+      if (hoveredTable) {
+        tableDragIcon.classList.add('visible');
+      }
+    });
+    
+    tableDragIcon.addEventListener('mouseleave', () => {
+      if (!isDraggingTable) {
+        hideTableDragIcon();
+      }
+    });
+    
+    // Table drag icon mousedown - start resize
+    tableDragIcon.addEventListener('mousedown', (e) => {
+      if (!hoveredTable) return;
+      
+      isDraggingTable = true;
+      resizingTable = hoveredTable;
+      tableResizeStartX = e.clientX;
+      tableResizeStartWidth = resizingTable.offsetWidth;
+      
+      tableDragIcon.classList.remove('visible');
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    
+    // Mouse move for table resize
+    document.addEventListener('mousemove', handleTableResize);
+    
+    // ============================================
+    // Detect quill-table-better cell/column resize
+    // ============================================
+    let isTableBetterResizing = false;
+    let lastTableHTML = '';
+    
+    // Detect when quill-table-better starts resizing (mousedown on resize handles)
+    editor.root.addEventListener('mousedown', (e) => {
+      // quill-table-better adds resize handles with specific classes
+      const isResizeHandle = e.target.classList.contains('ql-table-better-col-tool') ||
+                            e.target.classList.contains('ql-table-better-row-tool') ||
+                            e.target.closest('.ql-table-better-col-tool') ||
+                            e.target.closest('.ql-table-better-row-tool') ||
+                            e.target.classList.contains('ql-table-better-selection-line') ||
+                            e.target.closest('.ql-table-better-selection-line');
+      
+      if (isResizeHandle) {
+        isTableBetterResizing = true;
+        // Store current table state
+        const tables = editor.root.querySelectorAll('table');
+        lastTableHTML = Array.from(tables).map(t => t.outerHTML).join('');
+        console.log('Table-better resize started');
+      }
+    }, true);
+    
+    // Detect when quill-table-better finishes resizing
+    document.addEventListener('mouseup', () => {
+      if (isTableBetterResizing) {
+        isTableBetterResizing = false;
+        
+        // Check if table HTML changed
+        setTimeout(() => {
+          const tables = editor.root.querySelectorAll('table');
+          const currentTableHTML = Array.from(tables).map(t => t.outerHTML).join('');
+          
+          if (currentTableHTML !== lastTableHTML) {
+            console.log('Table-better resize complete, sending update');
+            const updatedHtml = editor.root.innerHTML;
+            sendContentChangeImmediate(updatedHtml);
+          }
+        }, 50);
+      }
+    });
+    
+    // Also use MutationObserver to catch column width changes
+    const tableResizeObserver = new MutationObserver((mutations) => {
+      let tableChanged = false;
+      
+      mutations.forEach(mutation => {
+        // Check for style changes on table elements (col, td, th, table)
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+          const target = mutation.target;
+          if (target.tagName === 'COL' || 
+              target.tagName === 'TD' || 
+              target.tagName === 'TH' || 
+              target.tagName === 'TABLE' ||
+              target.tagName === 'COLGROUP') {
+            tableChanged = true;
+          }
+        }
+        // Check for width attribute changes
+        if (mutation.type === 'attributes' && mutation.attributeName === 'width') {
+          tableChanged = true;
+        }
+      });
+      
+      if (tableChanged && !isTableBetterResizing && !isDraggingTable) {
+        // Debounce the update
+        clearTimeout(tableResizeObserver.updateTimer);
+        tableResizeObserver.updateTimer = setTimeout(() => {
+          console.log('Table mutation detected, sending update');
+          const updatedHtml = editor.root.innerHTML;
+          sendContentChangeImmediate(updatedHtml);
+        }, 100);
+      }
+    });
+    
+    // Start observing table style changes
+    tableResizeObserver.observe(editor.root, {
+      attributes: true,
+      attributeFilter: ['style', 'width'],
+      subtree: true
+    });
+    
+    // Mouse up - finish table resize
+    document.addEventListener('mouseup', () => {
+      if (isDraggingTable && resizingTable) {
+        // Store the final percentage
+        const percent = getTablePercent(resizingTable);
+        resizingTable.setAttribute('data-width-percent', percent);
+        
+        // Also store width as inline style attribute for export
+        const editorWidth = getEditorContentWidth();
+        const finalWidth = (editorWidth * percent) / 100;
+        resizingTable.style.width = `${finalWidth}px`;
+        
+        // Update wrapper if present
+        const wrapper = resizingTable.closest('.ql-table-wrapper');
+        if (wrapper) {
+          wrapper.style.width = `${finalWidth}px`;
+        }
+        
+        // Hide tooltip
+        resizeTooltip.classList.remove('visible');
+        
+        console.log('Table resize complete:', percent + '%', 'Width:', finalWidth + 'px');
+        
+        // Use a setTimeout to ensure DOM is fully updated, then send IMMEDIATE update
+        setTimeout(() => {
+          // Get the updated HTML content AFTER DOM update
+          const updatedHtml = editor.root.innerHTML;
+          
+          // Send immediate content change (bypasses throttle)
+          sendContentChangeImmediate(updatedHtml);
+          
+          console.log('Sent immediate HTML update to Flutter');
+        }, 10);
+        
+        isDraggingTable = false;
+        resizingTable = null;
+      }
+    });
+    
+    mediaResizer.querySelectorAll('.resize-handle').forEach(handle => {
+      handle.addEventListener('mousedown', (e) => {
+        if (!selectedMedia) return;
+        
+        isResizing = true;
+        resizeHandle = handle.dataset.handle;
+        resizeStartX = e.clientX;
+        resizeStartY = e.clientY;
+        resizeStartWidth = selectedMedia.offsetWidth;
+        resizeStartHeight = selectedMedia.offsetHeight;
+        
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+    
+    mediaAlignBtns.forEach(btn => {
+      btn.addEventListener('click', () => setMediaAlignment(btn.dataset.align));
+    });
+    
+    mediaSizeBtns.forEach(btn => {
+      btn.addEventListener('click', () => setMediaSizePercent(parseInt(btn.dataset.size)));
+    });
+    
+    mediaResetBtn.addEventListener('click', resetMediaSize);
+    mediaDeleteBtn.addEventListener('click', deleteSelectedMedia);
+    
+    document.addEventListener('mousemove', handleMediaResize);
+    document.addEventListener('mouseup', () => {
+      if (isResizing || isDraggingResize) {
+        isResizing = false;
+        isDraggingResize = false;
+        resizeHandle = null;
+        
+        // Hide resize tooltip
+        resizeTooltip.classList.remove('visible');
+        
+        // Notify about content change after resize completes
+        if (selectedMedia) {
+          // Update display one more time to ensure accuracy
+          updateMediaSizeDisplay();
+          
+          sendToFlutter({
+            type: 'contentChange',
+            delta: editor.getContents(),
+            html: editor.root.innerHTML,
+            text: editor.getText()
+          });
+        }
+      }
+    });
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        deselectMedia();
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedMedia) {
+        e.preventDefault();
+        deleteSelectedMedia();
+      }
+    });
+    
+    // Reposition on scroll/resize - handle all scroll containers
+    const repositionResizer = () => {
+      if (selectedMedia) {
+        requestAnimationFrame(() => {
+          positionMediaResizer(selectedMedia);
+        });
+      }
+    };
+    
+    editor.root.addEventListener('scroll', repositionResizer);
+    document.querySelector('.ql-container')?.addEventListener('scroll', repositionResizer);
+    document.addEventListener('scroll', repositionResizer, true); // Capture phase for nested scrolls
+    
+    window.addEventListener('resize', () => {
+      if (selectedMedia) {
+        requestAnimationFrame(() => {
+          positionMediaResizer(selectedMedia);
+          updateSizeButtons();
+        });
+      }
+    });
+    
+    // Also reposition during any layout changes
+    const resizeObserver = new ResizeObserver(() => {
+      if (selectedMedia) {
+        requestAnimationFrame(() => {
+          positionMediaResizer(selectedMedia);
+        });
+      }
+    });
+    resizeObserver.observe(editor.root);
+
+    // ============================================
+    // Table Header Toggle Functionality
+    // ============================================
+    
+    // Add context menu for table header toggle
+    function createTableHeaderToggle() {
+      const toggle = document.createElement('div');
+      toggle.className = 'table-header-toggle';
+      toggle.innerHTML = `
+        <input type="checkbox" id="tableHeaderCheckbox">
+        <label for="tableHeaderCheckbox">Mark first row as header</label>
+      `;
+      return toggle;
+    }
+    
+    // Find the table element from a cell or any child element
+    function findParentTable(element) {
+      let current = element;
+      while (current && current !== editor.root) {
+        if (current.tagName === 'TABLE') {
+          return current;
+        }
+        current = current.parentElement;
+      }
+      return null;
+    }
+    
+    // Toggle header class on table
+    function toggleTableHeader(table, hasHeader) {
+      if (hasHeader) {
+        table.classList.add('table-with-header');
+      } else {
+        table.classList.remove('table-with-header');
+      }
+      // Notify Flutter of content change
+      sendToFlutter({
+        type: 'contentChange',
+        delta: editor.getContents(),
+        html: editor.root.innerHTML,
+        text: editor.getText()
+      });
+    }
+    
+    // Create and show a popup menu for table header toggle
+    let tableHeaderPopup = null;
+    
+    function showTableHeaderPopup(table, x, y) {
+      hideTableHeaderPopup();
+      
+      tableHeaderPopup = document.createElement('div');
+      tableHeaderPopup.style.cssText = `
+        position: fixed;
+        left: ${x}px;
+        top: ${y}px;
+        background: white;
+        border: 1px solid #e5e0da;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        z-index: 1000;
+        overflow: hidden;
+      `;
+      
+      const hasHeader = table.classList.contains('table-with-header');
+      
+      tableHeaderPopup.innerHTML = `
+        <div class="table-header-toggle" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer; font-size: 13px; color: #2c2825; white-space: nowrap;">
+          <input type="checkbox" id="tableHeaderCheckbox" style="width: 16px; height: 16px; accent-color: #c45d35; cursor: pointer;" ${hasHeader ? 'checked' : ''}>
+          <label for="tableHeaderCheckbox" style="cursor: pointer;">Mark first row as header</label>
+        </div>
+      `;
+      
+      document.body.appendChild(tableHeaderPopup);
+      
+      const checkbox = tableHeaderPopup.querySelector('#tableHeaderCheckbox');
+      const toggleDiv = tableHeaderPopup.querySelector('.table-header-toggle');
+      
+      const handleToggle = (e) => {
+        e.stopPropagation();
+        const newValue = !table.classList.contains('table-with-header');
+        checkbox.checked = newValue;
+        toggleTableHeader(table, newValue);
+      };
+      
+      checkbox.addEventListener('change', (e) => {
+        toggleTableHeader(table, e.target.checked);
+      });
+      
+      toggleDiv.addEventListener('click', handleToggle);
+      
+      // Close popup when clicking outside
+      setTimeout(() => {
+        document.addEventListener('click', hideTableHeaderPopup, { once: true });
+      }, 10);
+    }
+    
+    function hideTableHeaderPopup() {
+      if (tableHeaderPopup) {
+        tableHeaderPopup.remove();
+        tableHeaderPopup = null;
+      }
+    }
+    
+    // Listen for right-click on tables to show header toggle
+    editor.root.addEventListener('contextmenu', (e) => {
+      const table = findParentTable(e.target);
+      if (table) {
+        e.preventDefault();
+        showTableHeaderPopup(table, e.clientX, e.clientY);
+      }
+    });
+    
+    // Also add keyboard shortcut (Ctrl/Cmd + Shift + H) to toggle header when cursor is in table
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'H') {
+        const selection = editor.getSelection();
+        if (selection) {
+          const [leaf] = editor.getLeaf(selection.index);
+          if (leaf && leaf.domNode) {
+            const table = findParentTable(leaf.domNode);
+            if (table) {
+              e.preventDefault();
+              const hasHeader = table.classList.contains('table-with-header');
+              toggleTableHeader(table, !hasHeader);
+            }
+          }
+        }
+      }
+    });
+
+    // Signal ready
+    window.addEventListener('load', function() {
+      sendToFlutter({
+        type: 'ready'
+      });
+    });
+  </script>
+</body>
+</html>
+

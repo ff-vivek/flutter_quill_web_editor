@@ -151,6 +151,10 @@ _editorKey.currentState?.methodName();
 | `getContents()` | Request current content (triggers callback) |
 | `clear()` | Clear all editor content |
 | `focus()` | Focus the editor |
+| `undo()` | Undo the last operation |
+| `redo()` | Redo the last undone operation |
+| `format(String format, dynamic value)` | Apply formatting to selection |
+| `insertTable(int rows, int cols)` | Insert a table at cursor |
 | `zoomIn()` | Increase zoom by 10% |
 | `zoomOut()` | Decrease zoom by 10% |
 | `resetZoom()` | Reset zoom to 100% |
@@ -522,6 +526,19 @@ class _EditorPageState extends State<EditorPage> {
       appBar: AppBar(
         title: Text('Editor'),
         actions: [
+          // Undo/Redo
+          IconButton(
+            onPressed: () => _editorKey.currentState?.undo(),
+            icon: Icon(Icons.undo),
+            tooltip: 'Undo',
+          ),
+          IconButton(
+            onPressed: () => _editorKey.currentState?.redo(),
+            icon: Icon(Icons.redo),
+            tooltip: 'Redo',
+          ),
+          SizedBox(width: 8),
+          // Zoom
           ZoomControls(
             zoomLevel: _zoom,
             onZoomIn: () {

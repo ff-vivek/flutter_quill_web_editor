@@ -104,6 +104,58 @@ export function handleCommand(data, editor, Quill) {
       editor.focus();
       break;
 
+    case 'undo':
+      {
+        const history = editor.getModule('history');
+        if (history) {
+          history.undo();
+          sendContentChange(editor);
+        } else {
+          console.warn('History module not found');
+        }
+      }
+      break;
+
+    case 'redo':
+      {
+        const history = editor.getModule('history');
+        if (history) {
+          history.redo();
+          sendContentChange(editor);
+        } else {
+          console.warn('History module not found');
+        }
+      }
+      break;
+
+    case 'format':
+      // Apply formatting to selection or at cursor
+      if (data.format && data.value !== undefined) {
+        const range = editor.getSelection();
+        if (range) {
+          if (range.length > 0) {
+            // Format selected text
+            editor.formatText(range.index, range.length, data.format, data.value, Quill.sources.USER);
+          } else {
+            // Format at cursor position (for next typed characters)
+            editor.format(data.format, data.value, Quill.sources.USER);
+          }
+          sendContentChange(editor);
+        }
+      }
+      break;
+
+    case 'insertTable':
+      // Insert a table at cursor position
+      if (data.rows && data.cols) {
+        const tableModule = editor.getModule('tableWrapper');
+        if (tableModule) {
+          tableModule.insertTable(data.rows, data.cols);
+          sendContentChange(editor);
+        }
+      }
+      break;
+
     case 'setZoom':
       if (data.zoom !== undefined) {
         const zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, data.zoom));
@@ -126,15 +178,17 @@ export function handleCommand(data, editor, Quill) {
  */
 export function setupCommandListener(editor, Quill) {
   window.addEventListener('message', function(event) {
-    if (event.source !== window.parent) return;
+    // Accept messages from parent window (Flutter) or same window
+    if (event.source !== window.parent && event.source !== window) return;
 
     try {
-      const data = JSON.parse(event.data);
+      const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
       if (data.type === 'command') {
+        console.log('Received command:', data.action);
         handleCommand(data, editor, Quill);
       }
     } catch (e) {
-      console.log('Message parse error:', e);
+      console.log('Message parse error:', e, event.data);
     }
   });
 }

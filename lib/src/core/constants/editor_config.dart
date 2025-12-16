@@ -33,8 +33,6 @@ abstract class EditorConfig {
       'https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css';
   static const String quillTableBetterJs =
       'https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.js';
-  static const String katexCss =
-      'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
 
   /// Editor HTML file paths (relative to web/)
   static const String editorHtmlPath = 'quill_editor.html';

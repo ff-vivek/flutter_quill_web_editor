@@ -224,6 +224,44 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
     });
   }
 
+  /// Undo the last operation.
+  void undo() {
+    _sendCommand({
+      'action': 'undo',
+    });
+  }
+
+  /// Redo the last undone operation.
+  void redo() {
+    _sendCommand({
+      'action': 'redo',
+    });
+  }
+
+  /// Apply formatting to the current selection or cursor position.
+  ///
+  /// [format] - The format name (e.g., 'bold', 'italic', 'color', 'font', 'size')
+  /// [value] - The format value (e.g., true for bold, '#ff0000' for color)
+  void format(String format, dynamic value) {
+    _sendCommand({
+      'action': 'format',
+      'format': format,
+      'value': value,
+    });
+  }
+
+  /// Insert a table at the cursor position.
+  ///
+  /// [rows] - Number of rows
+  /// [cols] - Number of columns
+  void insertTable(int rows, int cols) {
+    _sendCommand({
+      'action': 'insertTable',
+      'rows': rows,
+      'cols': cols,
+    });
+  }
+
   /// Zoom in the editor (increase by [EditorConfig.zoomStep]).
   void zoomIn() {
     _currentZoom = (_currentZoom + EditorConfig.zoomStep)
@@ -292,4 +330,3 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
     );
   }
 }
-

@@ -32,10 +32,11 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
   <li>Lists (ordered and unordered)</li>
   <li>Links and images</li>
   <li>Tables with full editing support</li>
+  <li>Undo/Redo support ↩️</li>
   <li>Emoji picker 😀</li>
   <li>Markdown shortcuts</li>
 </ul>
-<blockquote>Start writing your content here...</blockquote>
+<blockquote>Try the undo (Ctrl+Z) and redo (Ctrl+Y) buttons above!</blockquote>
 ''';
 
   void _onContentChanged(String html, dynamic delta) {
@@ -77,7 +78,7 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
   }
 
   void _clearEditor() {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => PointerInterceptor(
         child: AlertDialog(
@@ -167,6 +168,18 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
           ],
         ),
         actions: [
+          // Undo/Redo buttons
+          IconButton(
+            onPressed: () => _editorKey.currentState?.undo(),
+            icon: const Icon(Icons.undo),
+            tooltip: 'Undo (Ctrl+Z)',
+          ),
+          IconButton(
+            onPressed: () => _editorKey.currentState?.redo(),
+            icon: const Icon(Icons.redo),
+            tooltip: 'Redo (Ctrl+Y)',
+          ),
+          const SizedBox(width: 8),
           // Zoom controls
           ZoomControls(
             zoomLevel: _zoomLevel,
@@ -248,8 +261,16 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
                     title: 'Document Info',
                     child: StatCardRow(
                       stats: [
-                        (label: 'Words', value: _wordCount.toString(), icon: null),
-                        (label: 'Characters', value: _charCount.toString(), icon: null),
+                        (
+                          label: 'Words',
+                          value: _wordCount.toString(),
+                          icon: null
+                        ),
+                        (
+                          label: 'Characters',
+                          value: _charCount.toString(),
+                          icon: null
+                        ),
                       ],
                     ),
                   ),
@@ -288,4 +309,3 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
     );
   }
 }
-

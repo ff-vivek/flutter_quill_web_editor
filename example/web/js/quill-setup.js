@@ -253,6 +253,11 @@ export function initializeQuill(Quill, QuillTableBetter, selector = '#editor') {
       },
       clipboard: {
         matchers: clipboardMatchers
+      },
+      history: {
+        delay: 1000,
+        maxStack: 100,
+        userOnly: true
       }
     }
   });

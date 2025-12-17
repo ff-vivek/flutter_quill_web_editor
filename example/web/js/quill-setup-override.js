@@ -1,16 +1,24 @@
 /**
- * Quill Setup
- * ===========
- * Quill editor initialization and registration
+ * Custom Quill Setup Override
+ * ============================
+ * 
+ * This file extends the package's quill-setup.js to use custom configurations.
+ * It imports the package setup functions and re-exports them with custom config.
+ * 
+ * Last updated: 2025-12-17
  */
 
-import { FONT_WHITELIST, SIZE_WHITELIST, TOOLBAR_OPTIONS } from './config.js';
-import { rgbToHex, mapFontFamily, mapFontSize } from './utils.js';
+// No need to import createClipboardMatchers - we create our own with custom font mapping
+
+// Import custom configuration
+import { FONT_WHITELIST, TOOLBAR_OPTIONS } from './config-override.js';
+import { SIZE_WHITELIST } from '/assets/packages/quill_web_editor/web/js/config.js';
+
+// Import custom utils (with Mulish font mapping)
+import { mapFontFamily, rgbToHex, mapFontSize } from './utils-override.js';
 
 /**
- * Register custom formats and modules with Quill
- * @param {Object} Quill - Quill constructor
- * @param {Object} QuillTableBetter - Table Better module
+ * Register custom formats and modules with Quill (with custom font whitelist)
  */
 export function registerQuillModules(Quill, QuillTableBetter) {
   // Register Table Better module
@@ -18,24 +26,75 @@ export function registerQuillModules(Quill, QuillTableBetter) {
     'modules/table-better': QuillTableBetter
   }, true);
 
-  // Register custom fonts
+  // Register custom fonts with Mulish added
   const Font = Quill.import('formats/font');
   Font.whitelist = FONT_WHITELIST;
   Quill.register(Font, true);
 
-  // Register custom sizes
+  // Register custom sizes (from package)
   const Size = Quill.import('formats/size');
   Size.whitelist = SIZE_WHITELIST;
   Quill.register(Size, true);
 }
 
 /**
- * Create clipboard matchers for paste handling
- * @param {Object} Quill - Quill constructor
- * @returns {Array} Array of clipboard matchers
+ * Create clipboard matchers with custom font mapping
  */
-export function createClipboardMatchers(Quill) {
+function createClipboardMatchers(Quill) {
   const Delta = Quill.import('delta');
+  
+  // Import createCellMatcher helper from package
+  // We'll create our own version that uses our custom mapFontFamily
+  function createCellMatcher(Quill) {
+    const Delta = Quill.import('delta');
+    
+    return function(node, delta) {
+      const formats = {};
+      const className = node.className || '';
+      const style = node.style;
+      
+      // Check for ql-font-* classes
+      const fontMatch = className.match(/ql-font-(\S+)/);
+      if (fontMatch) {
+        formats.font = fontMatch[1];
+      }
+      
+      // Check for ql-size-* classes
+      const sizeMatch = className.match(/ql-size-(\S+)/);
+      if (sizeMatch) {
+        formats.size = sizeMatch[1];
+      }
+      
+      // Parse inline font-family (using our custom mapFontFamily)
+      if (style.fontFamily) {
+        const font = mapFontFamily(style.fontFamily);
+        if (font) formats.font = font;
+      }
+      
+      // Parse inline font-size
+      if (style.fontSize) {
+        const size = mapFontSize(style.fontSize);
+        if (size) formats.size = size;
+      }
+      
+      // Parse inline color
+      if (style.color) {
+        const hexColor = rgbToHex(style.color);
+        if (hexColor) formats.color = hexColor;
+      }
+      
+      // Parse inline background color
+      if (style.backgroundColor) {
+        const hexBg = rgbToHex(style.backgroundColor);
+        if (hexBg) formats.background = hexBg;
+      }
+      
+      if (Object.keys(formats).length > 0) {
+        return delta.compose(new Delta().retain(delta.length(), formats));
+      }
+      return delta;
+    };
+  }
   
   return [
     // Match any element with inline styles
@@ -43,7 +102,7 @@ export function createClipboardMatchers(Quill) {
       const style = node.style;
       const formats = {};
       
-      // Parse font-family
+      // Parse font-family (using our custom mapFontFamily)
       if (style.fontFamily) {
         const font = mapFontFamily(style.fontFamily);
         if (font) formats.font = font;
@@ -115,7 +174,7 @@ export function createClipboardMatchers(Quill) {
         formats.color = color;
       }
       
-      // Handle face attribute (font family)
+      // Handle face attribute (font family) - using our custom mapFontFamily
       if (node.face) {
         const font = mapFontFamily(node.face);
         if (font) formats.font = font;
@@ -167,81 +226,21 @@ export function createClipboardMatchers(Quill) {
 }
 
 /**
- * Create a cell matcher for TD/TH elements
- * @param {Object} Quill - Quill constructor
- * @returns {Function} Matcher function
- */
-function createCellMatcher(Quill) {
-  const Delta = Quill.import('delta');
-  
-  return function(node, delta) {
-    const formats = {};
-    const className = node.className || '';
-    const style = node.style;
-    
-    // Check for ql-font-* classes
-    const fontMatch = className.match(/ql-font-(\S+)/);
-    if (fontMatch) {
-      formats.font = fontMatch[1];
-    }
-    
-    // Check for ql-size-* classes
-    const sizeMatch = className.match(/ql-size-(\S+)/);
-    if (sizeMatch) {
-      formats.size = sizeMatch[1];
-    }
-    
-    // Parse inline font-family
-    if (style.fontFamily) {
-      const font = mapFontFamily(style.fontFamily);
-      if (font) formats.font = font;
-    }
-    
-    // Parse inline font-size
-    if (style.fontSize) {
-      const size = mapFontSize(style.fontSize);
-      if (size) formats.size = size;
-    }
-    
-    // Parse inline color
-    if (style.color) {
-      const hexColor = rgbToHex(style.color);
-      if (hexColor) formats.color = hexColor;
-    }
-    
-    // Parse inline background color
-    if (style.backgroundColor) {
-      const hexBg = rgbToHex(style.backgroundColor);
-      if (hexBg) formats.background = hexBg;
-    }
-    
-    if (Object.keys(formats).length > 0) {
-      return delta.compose(new Delta().retain(delta.length(), formats));
-    }
-    return delta;
-  };
-}
-
-/**
- * Initialize Quill editor with all modules and configurations
- * @param {Object} Quill - Quill constructor
- * @param {Object} QuillTableBetter - Table Better module
- * @param {string} selector - Editor container selector
- * @returns {Object} Quill editor instance
+ * Initialize Quill editor with custom toolbar options
  */
 export function initializeQuill(Quill, QuillTableBetter, selector = '#editor') {
-  // Register modules
+  // Register modules with custom config
   registerQuillModules(Quill, QuillTableBetter);
   
-  // Create clipboard matchers
+  // Create clipboard matchers with custom font mapping
   const clipboardMatchers = createClipboardMatchers(Quill);
   
-  // Initialize Quill
+  // Initialize Quill with custom toolbar options
   const editor = new Quill(selector, {
     theme: 'snow',
     placeholder: 'Start writing your story...',
     modules: {
-      toolbar: TOOLBAR_OPTIONS,
+      toolbar: TOOLBAR_OPTIONS,  // Use custom toolbar with Mulish font
       table: false,
       'table-better': {
         language: 'en_US',

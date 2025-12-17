@@ -24,6 +24,7 @@
 -->
 <html lang="en">
 <head>
+  <base href="/">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quill Editor v2.0.0</title>
@@ -37,13 +38,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=DM+Sans:wght@400;500;600&family=Roboto:wght@400;500&family=Open+Sans:wght@400;500&family=Lato:wght@400;700&family=Montserrat:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
   
-  <!-- Modular Styles -->
-  <link rel="stylesheet" href="styles/base.css">
-  <link rel="stylesheet" href="styles/quill-theme.css">
-  <link rel="stylesheet" href="styles/fonts.css">
-  <link rel="stylesheet" href="styles/sizes.css">
-  <link rel="stylesheet" href="styles/tables.css">
-  <link rel="stylesheet" href="styles/media.css">
+  <!-- Package Styles (from quill_web_editor package) -->
+  <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/base.css">
+  <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/quill-theme.css">
+  <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/fonts.css">
+  <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/sizes.css">
+  <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/tables.css">
+  <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/media.css">
   
   <!-- Custom Font: Mulish (loads after package CSS for proper override precedence) -->
   <link rel="stylesheet" href="styles/mulish-font.css">
@@ -117,13 +118,13 @@
   
   <!-- Application Entry Point -->
   <script type="module">
-    import { initializeQuill } from './js/quill-setup.js';
-    import { setupPasteHandler, setupSelectionPreservation } from './js/clipboard.js';
-    import { setupCommandListener } from './js/commands.js';
-    import { setupMediaResize } from './js/media-resize.js';
-    import { setupTableResize } from './js/table-resize.js';
-    import { setupDragDrop, setupMediaObserver } from './js/drag-drop.js';
-    import { sendReady, sendContentChange } from './js/flutter-bridge.js';
+    import { initializeQuill } from './js/quill-setup-override.js';
+    import { setupPasteHandler, setupSelectionPreservation } from './js/clipboard-override.js';
+    import { setupCommandListener } from '/assets/packages/quill_web_editor/web/js/commands.js';
+    import { setupMediaResize } from '/assets/packages/quill_web_editor/web/js/media-resize.js';
+    import { setupTableResize } from '/assets/packages/quill_web_editor/web/js/table-resize.js';
+    import { setupDragDrop, setupMediaObserver } from '/assets/packages/quill_web_editor/web/js/drag-drop.js';
+    import { sendReady, sendContentChange } from '/assets/packages/quill_web_editor/web/js/flutter-bridge.js';
 
     // Initialize Quill editor
     const editor = initializeQuill(Quill, QuillTableBetter);

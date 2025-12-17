@@ -12,7 +12,7 @@
 
 html, body {
   height: 100%;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Mulish','DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background: #ffffff;
 }
 
@@ -21,6 +21,7 @@ html, body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  font-family: 'Mulish', Georgia, serif;
 }
 
 /* Viewer container */

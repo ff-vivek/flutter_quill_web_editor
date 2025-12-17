@@ -6,6 +6,7 @@
 
 // Font whitelist for Quill
 export const FONT_WHITELIST = [
+  'mulish',
   'roboto', 
   'open-sans', 
   'lato', 
@@ -21,6 +22,7 @@ export const SIZE_WHITELIST = ['small', false, 'large', 'huge'];
 // Font family mapping - maps common fonts to Quill font classes
 export const FONT_FAMILY_MAP = {
   // Direct mappings
+  'mulish': 'mulish',
   'roboto': 'roboto',
   'open sans': 'open-sans',
   'opensans': 'open-sans',

@@ -12,6 +12,7 @@
 .ql-font-source-code { font-family: 'Source Code Pro', monospace; }
 .ql-font-crimson { font-family: 'Crimson Pro', serif; }
 .ql-font-dm-sans { font-family: 'DM Sans', sans-serif; }
+.ql-font-mulish { font-family: 'Mulish', sans-serif; }
 
 /* Font family support - Editor content */
 .ql-editor .ql-font-roboto { font-family: 'Roboto', sans-serif; }
@@ -21,6 +22,7 @@
 .ql-editor .ql-font-source-code { font-family: 'Source Code Pro', monospace; }
 .ql-editor .ql-font-crimson { font-family: 'Crimson Pro', serif; }
 .ql-editor .ql-font-dm-sans { font-family: 'DM Sans', sans-serif; }
+.ql-editor .ql-font-mulish { font-family: 'Mulish', sans-serif; }
 
 /* Font picker dropdown labels - Default */
 .ql-snow .ql-picker.ql-font .ql-picker-label::before,
@@ -75,5 +77,12 @@
 .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="dm-sans"]::before {
   content: 'DM Sans';
   font-family: 'DM Sans', sans-serif;
+}
+
+/* Font picker - Mulish */
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="mulish"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="mulish"]::before {
+  content: 'Mulish';
+  font-family: 'Mulish', sans-serif;
 }
 

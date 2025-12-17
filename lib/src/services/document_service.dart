@@ -7,6 +7,25 @@ import '../core/utils/export_styles.dart';
 
 /// Service for document operations like saving and exporting.
 class DocumentService {
+  /// Generates a complete HTML document from content.
+  ///
+  /// [content] - The HTML content to generate document from.
+  /// [cleanHtml] - Whether to clean editor artifacts from HTML (defaults to true).
+  /// [title] - Optional title for the HTML document.
+  /// Returns the complete HTML document as a string.
+  static String generateHtmlDocument(
+    String content, {
+    bool cleanHtml = true,
+    String? title,
+  }) {
+    // Clean HTML if requested
+    final cleanedContent =
+        cleanHtml ? HtmlCleaner.cleanForExport(content) : content;
+
+    // Generate full HTML document with styles
+    return ExportStyles.generateHtmlDocument(cleanedContent, title: title);
+  }
+
   /// Downloads the HTML content as a file.
   ///
   /// [content] - The HTML content to download.
@@ -17,12 +36,8 @@ class DocumentService {
     String filename = 'document.html',
     bool cleanHtml = true,
   }) {
-    // Clean HTML if requested
-    final cleanedContent =
-        cleanHtml ? HtmlCleaner.cleanForExport(content) : content;
-
-    // Generate full HTML document with styles
-    final fullHtml = ExportStyles.generateHtmlDocument(cleanedContent);
+    // Generate full HTML document
+    final fullHtml = generateHtmlDocument(content, cleanHtml: cleanHtml);
 
     // Create blob and download
     final bytes = utf8.encode(fullHtml);
@@ -89,8 +104,7 @@ class DocumentService {
   ///
   /// Opens a new window with the content and triggers the print dialog.
   static void printHtml(String content) {
-    final cleanedContent = HtmlCleaner.cleanForExport(content);
-    final fullHtml = ExportStyles.generateHtmlDocument(cleanedContent);
+    final fullHtml = generateHtmlDocument(content, cleanHtml: true);
 
     // Create blob URL and open in new window for printing
     final bytes = utf8.encode(fullHtml);
@@ -132,4 +146,3 @@ class DocumentService {
     return html.window.localStorage.containsKey(key);
   }
 }
-

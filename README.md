@@ -651,6 +651,34 @@ flutter run -d chrome
 
 ---
 
+## 🚀 Deployment
+
+For production deployments, you can host the HTML files on a CDN or static hosting service and reference them via `editorHtmlPath` and `viewerHtmlPath` parameters.
+
+### Quick Setup
+
+```dart
+QuillEditorWidget(
+  editorHtmlPath: 'https://your-cdn.com/quill-editor/quill_editor.html',
+  viewerHtmlPath: 'https://your-cdn.com/quill-editor/quill_viewer.html',
+  onContentChanged: (html, delta) {
+    // Handle changes
+  },
+)
+```
+
+### Files to Host
+
+- `quill_editor.html` - Main editor HTML
+- `quill_viewer.html` - Viewer HTML
+- `js/` folder - Custom JavaScript overrides
+- `styles/` folder - Custom CSS (e.g., `mulish-font.css`)
+- `fonts/` folder - Font files (optional, if hosting locally)
+
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment instructions, folder structure, and hosting configuration.
+
+---
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.

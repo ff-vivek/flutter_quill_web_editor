@@ -117,6 +117,25 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
     _showSnackBar('Document downloaded');
   }
 
+  void _generateAndPrintHtml() {
+    if (_currentHtml.isEmpty) {
+      _showSnackBar('No content to generate');
+      return;
+    }
+    final htmlDocument = DocumentService.generateHtmlDocument(
+      _currentHtml,
+      cleanHtml: true,
+      title: 'Quill Editor Document',
+    );
+    final separator = '=' * 80;
+    print(separator);
+    print('Generated HTML Document:');
+    print(separator);
+    print(htmlDocument);
+    print(separator);
+    _showSnackBar('HTML document printed to console');
+  }
+
   void _showPreview() {
     if (_currentHtml.isEmpty) {
       _showSnackBar('No content to preview');
@@ -215,6 +234,14 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
             onPressed: _showPreview,
             icon: const Icon(Icons.preview_outlined),
             label: const Text('Preview'),
+          ),
+          Tooltip(
+            message: 'Generate and print HTML document to console',
+            child: TextButton.icon(
+              onPressed: _generateAndPrintHtml,
+              icon: const Icon(Icons.print_outlined),
+              label: const Text('Print HTML'),
+            ),
           ),
           TextButton.icon(
             onPressed: _clearEditor,

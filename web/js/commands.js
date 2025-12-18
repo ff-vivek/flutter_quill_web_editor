@@ -38,8 +38,9 @@ export function handleCommand(data, editor, Quill) {
         const delta = editor.clipboard.convert({ html: htmlContent, text: tempContainer.innerText });
         
         if (data.replace !== false) {
-          // Replace all content
-          editor.setContents(delta, Quill.sources.USER);
+           // Replace all content - always use USER source for proper parsing
+           editor.setContents([], Quill.sources.USER);
+           editor.updateContents(new Delta().retain(0).concat(delta), Quill.sources.USER);
         } else {
           // Insert at current position
           const range = editor.getSelection();

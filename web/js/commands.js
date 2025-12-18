@@ -26,20 +26,33 @@ export function handleCommand(data, editor, Quill) {
 
     case 'setHTML':
       if (data.html) {
+        console.log('[HTML Parsing] setHTML command - Starting HTML processing');
+        console.log('[HTML Parsing] setHTML command - Original HTML length:', data.html?.length || 0);
+        
         // Extract body content if it's a full HTML document
         let htmlContent = extractBodyContent(data.html);
+        console.log('[HTML Parsing] setHTML command - After extractBodyContent, length:', htmlContent?.length || 0);
         
         // Pre-process to convert inline font styles to Quill classes and normalize colors
         htmlContent = preprocessHtml(htmlContent);
+        console.log('[HTML Parsing] setHTML command - After preprocessHtml, length:', htmlContent?.length || 0);
         
         // Convert HTML to Delta for proper format handling (including colors)
         const tempContainer = document.createElement('div');
         tempContainer.innerHTML = htmlContent;
+        console.log('[HTML Parsing] setHTML command - Converting HTML to Delta...');
         const delta = editor.clipboard.convert({ html: htmlContent, text: tempContainer.innerText });
+        console.log('[HTML Parsing] setHTML command - Delta length:', delta.length());
+        
+        // IMPORTANT: Always use USER source for setContents to ensure proper table/complex content parsing
+        // The quill-table-better module and other formatters require USER source to work correctly
+        // We use the 'silent' flag only to control Flutter notification, not Quill's internal processing
+        const isSilent = data.silent === true;
         
         if (data.replace !== false) {
-          // Replace all content
-          editor.setContents(delta, Quill.sources.USER);
+          // Replace all content - always use USER source for proper parsing
+          editor.setContents([], Quill.sources.USER);
+          editor.updateContents(new Delta().retain(0).concat(delta), Quill.sources.USER);
         } else {
           // Insert at current position
           const range = editor.getSelection();
@@ -47,8 +60,23 @@ export function handleCommand(data, editor, Quill) {
           editor.updateContents(new Delta().retain(index).concat(delta), Quill.sources.USER);
         }
         
-        // Notify Flutter of the content change
-        sendContentChange(editor);
+        // Clear undo history if this is silent initialization (to prevent undoing to empty state)
+        if (isSilent) {
+          const history = editor.getModule('history');
+          if (history) {
+            history.clear();
+          }
+        }
+        
+        // Only notify Flutter if not silent (user-initiated changes)
+        if (!isSilent) {
+          sendContentChange(editor);
+        } else {
+          // For silent initialization, send content change after a short delay to ensure editor is ready
+          setTimeout(() => {
+            sendContentChange(editor);
+          }, 100);
+        }
       }
       break;
 
@@ -64,16 +92,23 @@ export function handleCommand(data, editor, Quill) {
 
     case 'insertHtml':
       if (data.html) {
+        console.log('[HTML Parsing] insertHtml command - Starting HTML processing');
+        console.log('[HTML Parsing] insertHtml command - Original HTML length:', data.html?.length || 0);
+        
         // Extract body content if it's a full HTML document
         let htmlContent = extractBodyContent(data.html);
+        console.log('[HTML Parsing] insertHtml command - After extractBodyContent, length:', htmlContent?.length || 0);
         
         // Pre-process to convert inline font styles to Quill classes and normalize colors
         htmlContent = preprocessHtml(htmlContent);
+        console.log('[HTML Parsing] insertHtml command - After preprocessHtml, length:', htmlContent?.length || 0);
         
         // Convert HTML to Delta for proper format handling (including colors)
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlContent;
+        console.log('[HTML Parsing] insertHtml command - Converting HTML to Delta...');
         const insertDelta = editor.clipboard.convert({ html: htmlContent, text: tempDiv.innerText });
+        console.log('[HTML Parsing] insertHtml command - Delta length:', insertDelta.length());
         
         if (data.replace) {
           // Replace all content

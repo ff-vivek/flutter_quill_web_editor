@@ -122,9 +122,29 @@ export function mapFontSize(size) {
  * @returns {string} Processed HTML with Quill classes
  */
 export function preprocessHtml(html) {
+  console.log('[HTML Parsing] preprocessHtml - Input length:', html?.length || 0);
+  console.log('[HTML Parsing] preprocessHtml - Input preview:', html?.substring(0, 200) || 'null');
+  
   const parser = new DOMParser();
-  const doc = parser.parseFromString('<div>' + html + '</div>', 'text/html');
+  const wrappedHtml = '<div>' + html + '</div>';
+  console.log('[HTML Parsing] preprocessHtml - Wrapped HTML length:', wrappedHtml.length);
+  
+  const doc = parser.parseFromString(wrappedHtml, 'text/html');
+  
+  // Check for parsing errors
+  const parserError = doc.querySelector('parsererror');
+  if (parserError) {
+    console.error('[HTML Parsing] preprocessHtml - Parser error:', parserError.textContent);
+  }
+  
   const container = doc.body.firstChild;
+  if (!container) {
+    console.error('[HTML Parsing] preprocessHtml - No container element found after parsing');
+    return html;
+  }
+  
+  console.log('[HTML Parsing] preprocessHtml - Container tag:', container.tagName);
+  console.log('[HTML Parsing] preprocessHtml - Elements to process:', container.querySelectorAll('*').length);
   
   // Process all elements with inline styles
   container.querySelectorAll('*').forEach(el => {
@@ -241,7 +261,11 @@ export function preprocessHtml(html) {
     font.parentNode.replaceChild(span, font);
   });
   
-  return container.innerHTML;
+  const processedHtml = container.innerHTML;
+  console.log('[HTML Parsing] preprocessHtml - Output length:', processedHtml?.length || 0);
+  console.log('[HTML Parsing] preprocessHtml - Output preview:', processedHtml?.substring(0, 200) || 'null');
+  
+  return processedHtml;
 }
 
 /**
@@ -250,15 +274,103 @@ export function preprocessHtml(html) {
  * @returns {string} Body content only
  */
 export function extractBodyContent(html) {
+  console.log('[HTML Parsing] extractBodyContent - Input length:', html?.length || 0);
+  console.log('[HTML Parsing] extractBodyContent - Input preview:', html?.substring(0, 200) || 'null');
+  
   if (html.includes('<!DOCTYPE') || html.includes('<html')) {
+    console.log('[HTML Parsing] extractBodyContent - Detected full HTML document, parsing...');
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
+    
+    // Check for parsing errors
+    const parserError = doc.querySelector('parsererror');
+    if (parserError) {
+      console.error('[HTML Parsing] extractBodyContent - Parser error:', parserError.textContent);
+    }
+    
     const body = doc.body;
     if (body) {
-      return body.innerHTML;
+      let bodyContent = body.innerHTML;
+      
+      // If body contains a single .ql-editor div, unwrap it to get just the content
+      // This handles exported HTML documents that wrap content in <div class="ql-editor">
+      const qlEditorDiv = body.querySelector('.ql-editor');
+      if (qlEditorDiv && body.children.length === 1 && body.children[0] === qlEditorDiv) {
+        console.log('[HTML Parsing] extractBodyContent - Found .ql-editor wrapper, unwrapping...');
+        bodyContent = qlEditorDiv.innerHTML;
+        console.log('[HTML Parsing] extractBodyContent - Unwrapped content length:', bodyContent?.length || 0);
+      }
+      
+      console.log('[HTML Parsing] extractBodyContent - Extracted body content length:', bodyContent?.length || 0);
+      console.log('[HTML Parsing] extractBodyContent - Body content preview:', bodyContent?.substring(0, 200) || 'null');
+      return bodyContent;
+    } else {
+      console.warn('[HTML Parsing] extractBodyContent - No body element found');
     }
+  } else {
+    console.log('[HTML Parsing] extractBodyContent - Not a full HTML document, returning as-is');
   }
   return html;
+}
+
+/**
+ * Clean HTML for saving by removing editor artifacts
+ * This should be called before saving to database to prevent corrupted HTML
+ * @param {string} html - HTML to clean
+ * @returns {string} Cleaned HTML
+ */
+export function cleanHtmlForSave(html) {
+  if (!html) return html;
+  
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  
+  // 1. Remove all <temporary> elements (quill-table-better internal artifacts)
+  doc.querySelectorAll('temporary, .ql-table-temporary').forEach(el => {
+    el.remove();
+  });
+  
+  // 2. Remove empty tables (tables with no actual content - no tbody or only empty tbody)
+  doc.querySelectorAll('table').forEach(table => {
+    const tbody = table.querySelector('tbody');
+    const hasRows = table.querySelector('tr');
+    const hasCells = table.querySelector('td, th');
+    
+    // If table has no rows or cells, remove it entirely
+    if (!hasRows || !hasCells) {
+      console.log('[HTML Cleaning] Removing empty table');
+      table.remove();
+    }
+  });
+  
+  // 3. Remove quill-table-better tool elements
+  doc.querySelectorAll('[class*="ql-table-better-tool"], [class*="ql-table-better-col"], [class*="ql-table-better-row"], [class*="ql-table-better-corner"]').forEach(el => {
+    el.remove();
+  });
+  
+  // 4. Remove selection classes
+  const selectionClasses = [
+    'selected', 'ql-cell-selected', 'ql-table-selected', 
+    'ql-cell-focused', 'ql-table-better-selected-td',
+    'ql-table-better-selection-line', 'ql-table-better-selection-block'
+  ];
+  
+  doc.querySelectorAll('*').forEach(el => {
+    selectionClasses.forEach(cls => {
+      el.classList.remove(cls);
+    });
+    
+    // Remove any class containing 'select'
+    const classesToRemove = [];
+    el.classList.forEach(cls => {
+      if (cls.includes('select')) {
+        classesToRemove.push(cls);
+      }
+    });
+    classesToRemove.forEach(cls => el.classList.remove(cls));
+  });
+  
+  return doc.body.innerHTML;
 }
 
 /**
@@ -267,8 +379,33 @@ export function extractBodyContent(html) {
  * @returns {string} Cleaned HTML
  */
 export function cleanHtmlForPreview(html) {
+  console.log('[HTML Parsing] cleanHtmlForPreview - Input length:', html?.length || 0);
+  console.log('[HTML Parsing] cleanHtmlForPreview - Input preview:', html?.substring(0, 200) || 'null');
+  
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
+  
+  // Check for parsing errors
+  const parserError = doc.querySelector('parsererror');
+  if (parserError) {
+    console.error('[HTML Parsing] cleanHtmlForPreview - Parser error:', parserError.textContent);
+  }
+  
+  console.log('[HTML Parsing] cleanHtmlForPreview - Elements to clean:', doc.querySelectorAll('*').length);
+  
+  // Remove <temporary> elements (quill-table-better internal artifacts)
+  doc.querySelectorAll('temporary, .ql-table-temporary').forEach(el => {
+    el.remove();
+  });
+  
+  // Remove empty tables (tables with no actual content)
+  doc.querySelectorAll('table').forEach(table => {
+    const hasRows = table.querySelector('tr');
+    const hasCells = table.querySelector('td, th');
+    if (!hasRows || !hasCells) {
+      table.remove();
+    }
+  });
   
   // Classes to remove (selection-related)
   const selectionClasses = [
@@ -313,10 +450,16 @@ export function cleanHtmlForPreview(html) {
   });
   
   // Remove quill-table-better tool elements entirely
-  doc.querySelectorAll('[class*="ql-table-better-tool"], [class*="ql-table-better-col"], [class*="ql-table-better-row"], [class*="ql-table-better-corner"]').forEach(el => {
+  const toolElements = doc.querySelectorAll('[class*="ql-table-better-tool"], [class*="ql-table-better-col"], [class*="ql-table-better-row"], [class*="ql-table-better-corner"]');
+  console.log('[HTML Parsing] cleanHtmlForPreview - Removing tool elements:', toolElements.length);
+  toolElements.forEach(el => {
     el.remove();
   });
   
-  return doc.body.innerHTML;
+  const cleanedHtml = doc.body.innerHTML;
+  console.log('[HTML Parsing] cleanHtmlForPreview - Output length:', cleanedHtml?.length || 0);
+  console.log('[HTML Parsing] cleanHtmlForPreview - Output preview:', cleanedHtml?.substring(0, 200) || 'null');
+  
+  return cleanedHtml;
 }
 

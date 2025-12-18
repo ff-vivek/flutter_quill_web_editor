@@ -232,8 +232,8 @@ The HTML files reference files using relative paths:
 
 The HTML files load these from CDN (no hosting needed):
 
-- **Quill.js**: `https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.js`
-- **Quill CSS**: `https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css`
+- **Quill.js**: `https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js`
+- **Quill CSS**: `https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css`
 - **Quill Table Better**: `https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.js`
 - **Google Fonts**: `https://fonts.googleapis.com/css2?family=...`
 

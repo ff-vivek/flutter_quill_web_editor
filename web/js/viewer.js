@@ -33,8 +33,11 @@ export function initializeViewer(selector = '#viewer') {
       }
     } catch (e) {
       // Plain HTML string
+      console.log('[HTML Parsing] Viewer - Received plain HTML string (not JSON)');
+      console.log('[HTML Parsing] Viewer - HTML length:', event.data?.length || 0);
       const cleanedHtml = cleanHtmlForPreview(event.data);
       viewer.innerHTML = cleanedHtml;
+      console.log('[HTML Parsing] Viewer - HTML set in viewer element');
     }
   });
 }
@@ -47,8 +50,11 @@ export function initializeViewer(selector = '#viewer') {
 function handleViewerCommand(data, viewer) {
   switch (data.action) {
     case 'setHTML':
+      console.log('[HTML Parsing] Viewer command - setHTML action');
+      console.log('[HTML Parsing] Viewer command - HTML length:', data.html?.length || 0);
       const cleanedHtml = cleanHtmlForPreview(data.html || '');
       viewer.innerHTML = cleanedHtml;
+      console.log('[HTML Parsing] Viewer command - HTML set in viewer element');
       break;
       
     case 'setZoom':

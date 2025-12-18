@@ -151,13 +151,28 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
 
   void _initializeContent() {
     if (_hasInitializedContent) return;
-    _hasInitializedContent = true;
 
-    Future.delayed(const Duration(milliseconds: 100), () {
+    // Wait longer to ensure editor is fully ready, then initialize content
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+
+      if (!_isReady || _iframe == null) {
+        // If still not ready, wait a bit more and retry
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted && !_hasInitializedContent) {
+            _initializeContent();
+          }
+        });
+        return;
+      }
+
+      // Mark as initialized before setting content to prevent retries
+      _hasInitializedContent = true;
+
       if (widget.initialDelta != null) {
         setContents(widget.initialDelta);
       } else if (widget.initialHtml != null && widget.initialHtml!.isNotEmpty) {
-        setHTML(widget.initialHtml!);
+        setHTML(widget.initialHtml!, silent: true);
       }
     });
   }
@@ -182,11 +197,13 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
   ///
   /// If [replace] is true (default), replaces all content.
   /// If [replace] is false, inserts at cursor position.
-  void setHTML(String html, {bool replace = true}) {
+  /// If [silent] is true, uses SILENT source to avoid triggering change events (for initialization).
+  void setHTML(String html, {bool replace = true, bool silent = false}) {
     _sendCommand({
       'action': 'setHTML',
       'html': html,
       'replace': replace,
+      'silent': silent,
     });
   }
 
@@ -318,6 +335,7 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
 
   @override
   void dispose() {
+    print('dispose QuillEditorWidget');
     html.window.removeEventListener('message', _handleMessage);
     super.dispose();
   }

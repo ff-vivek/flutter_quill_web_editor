@@ -26,12 +26,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quill Viewer v2.0.0</title>
   
-  <!-- External CSS Dependencies -->
-  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css" rel="stylesheet">
+  <!-- Disable Caching -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=DM+Sans:wght@400;500;600&family=Roboto:wght@400;500&family=Open+Sans:wght@400;500&family=Lato:wght@400;700&family=Montserrat:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+  <!-- External CSS Dependencies -->
+  <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
+  <link href="styles/quill-table-better.css" rel="stylesheet">
+  
   
   <!-- Package Styles (from quill_web_editor package) -->
   <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/base.css">
@@ -44,6 +47,11 @@
   
   <!-- Custom Font: Mulish (loads after package CSS for proper override precedence) -->
   <link rel="stylesheet" href="styles/mulish-font.css">
+  
+  <!-- Cache-busting script -->
+  <script>
+    window.CACHE_VERSION = Date.now();
+  </script>
 </head>
 <body class="viewer-mode">
   <div id="viewer" class="ql-editor"></div>
@@ -51,6 +59,10 @@
   <!-- Application Entry Point -->
   <script type="module">
     import { initializeViewer } from '/assets/packages/quill_web_editor/web/js/viewer.js';
+    import { monitorFontLoading } from '/assets/packages/quill_web_editor/web/js/font-monitor.js';
+    
+    // Start font loading monitoring
+    monitorFontLoading();
     
     // Initialize the viewer
     initializeViewer('#viewer');

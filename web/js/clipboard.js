@@ -31,11 +31,16 @@ export function setupPasteHandler(editor, Quill) {
       htmlData.includes('background') ||
       htmlData.includes('style=')
     )) {
+      console.log('[HTML Parsing] Paste handler - Intercepting paste with HTML content');
+      console.log('[HTML Parsing] Paste handler - HTML data length:', htmlData?.length || 0);
+      console.log('[HTML Parsing] Paste handler - HTML data preview:', htmlData?.substring(0, 200) || 'null');
+      
       e.preventDefault();
       e.stopPropagation();
       
       // Pre-process the HTML to convert font styles and normalize colors
       let processedHtml = preprocessHtml(htmlData);
+      console.log('[HTML Parsing] Paste handler - Processed HTML length:', processedHtml?.length || 0);
       
       // Get current selection
       const range = editor.getSelection(true);
@@ -49,7 +54,9 @@ export function setupPasteHandler(editor, Quill) {
       // Convert HTML to Delta for proper format handling
       const tempContainer = document.createElement('div');
       tempContainer.innerHTML = processedHtml;
+      console.log('[HTML Parsing] Paste handler - Converting HTML to Delta...');
       const delta = editor.clipboard.convert({ html: processedHtml, text: tempContainer.innerText });
+      console.log('[HTML Parsing] Paste handler - Delta length:', delta.length());
       
       // Insert the delta at the current position
       editor.updateContents(new Delta().retain(index).concat(delta), Quill.sources.USER);

@@ -26,13 +26,13 @@ abstract class EditorConfig {
 
   /// Quill CDN URLs
   static const String quillCdnCss =
-      'https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css';
+      'https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css';
   static const String quillCdnJs =
-      'https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.js';
+      'https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js';
   static const String quillTableBetterCss =
-      'https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css';
+      'styles/quill-table-better.css';
   static const String quillTableBetterJs =
-      'https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.js';
+      'js/quill-table-better.js';
 
   /// Editor HTML file paths (relative to web/)
   static const String editorHtmlPath = 'quill_editor.html';

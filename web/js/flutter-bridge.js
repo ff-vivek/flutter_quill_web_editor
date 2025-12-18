@@ -5,6 +5,7 @@
  */
 
 import { CONTENT_CHANGE_THROTTLE } from './config.js';
+import { cleanHtmlForSave } from './utils.js';
 
 // Message throttling state
 let lastContentChangeTime = 0;
@@ -71,14 +72,17 @@ export function sendContentChangeImmediate(editor, html) {
   }
   lastContentChangeTime = Date.now();
   
+  // Clean HTML before sending to remove editor artifacts
+  const cleanedHtml = cleanHtmlForSave(html);
+  
   const data = {
     type: 'contentChange',
     delta: editor.getContents(),
-    html: html,
+    html: cleanedHtml,
     text: editor.getText()
   };
   
-  console.log('Sending immediate content change, HTML length:', html.length);
+  console.log('Sending immediate content change, HTML length:', cleanedHtml.length);
   _postMessage(data);
 }
 
@@ -96,11 +100,14 @@ export function sendReady() {
  * @param {Object} editor - Quill editor instance
  */
 export function sendContentsResponse(editor) {
+  // Clean HTML before sending to remove editor artifacts (like <temporary> tags)
+  const cleanedHtml = cleanHtmlForSave(editor.root.innerHTML);
+  
   sendToFlutter({
     type: 'response',
     action: 'getContents',
     delta: editor.getContents(),
-    html: editor.root.innerHTML,
+    html: cleanedHtml,
     text: editor.getText()
   });
 }
@@ -121,10 +128,13 @@ export function sendZoomChange(zoomLevel) {
  * @param {Object} editor - Quill editor instance
  */
 export function sendContentChange(editor) {
+  // Clean HTML before sending to remove editor artifacts (like <temporary> tags and empty tables)
+  const cleanedHtml = cleanHtmlForSave(editor.root.innerHTML);
+  
   sendToFlutter({
     type: 'contentChange',
     delta: editor.getContents(),
-    html: editor.root.innerHTML,
+    html: cleanedHtml,
     text: editor.getText()
   });
 }

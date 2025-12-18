@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:quill_web_editor/quill_web_editor.dart';
 
-import 'pages/editor_example_page.dart';
+import 'pages/dashboard_page.dart';
+import 'services/document_db_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize the local database
+  await DocumentDbService.initialize();
+
   runApp(const QuillEditorExampleApp());
 }
 
@@ -15,11 +20,10 @@ class QuillEditorExampleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Quill Web Editor Example',
+      title: 'Quill Web Editor',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const EditorExamplePage(),
+      home: const DashboardPage(),
     );
   }
 }
-

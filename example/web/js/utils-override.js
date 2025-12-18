@@ -14,7 +14,8 @@ import {
   mapFontSize,
   extractBodyContent,
   preprocessHtml,
-  cleanHtmlForPreview
+  cleanHtmlForPreview,
+  cleanHtmlForSave
 } from '/assets/packages/quill_web_editor/web/js/utils.js';
 
 // Import custom font family map
@@ -41,5 +42,5 @@ export function mapFontFamily(fontFamily) {
 }
 
 // Re-export other utility functions unchanged
-export { rgbToHex, normalizeColor, mapFontSize, extractBodyContent, preprocessHtml, cleanHtmlForPreview };
+export { rgbToHex, normalizeColor, mapFontSize, extractBodyContent, preprocessHtml, cleanHtmlForPreview, cleanHtmlForSave };
 

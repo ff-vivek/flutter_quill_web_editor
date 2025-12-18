@@ -145,7 +145,7 @@ sup { vertical-align: super; font-size: smaller; }
 
   /// External stylesheets to include in export.
   static List<String> get externalStylesheets => [
-        'https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css',
+        'https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css',
         'https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css',
         AppFonts.googleFontsUrl,
       ];

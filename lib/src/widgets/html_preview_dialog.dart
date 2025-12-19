@@ -302,4 +302,3 @@ class _HtmlPreviewWidgetState extends State<_HtmlPreviewWidget> {
     return HtmlElementView(viewType: 'html-preview-$_viewId');
   }
 }
-

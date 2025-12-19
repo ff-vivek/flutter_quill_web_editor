@@ -88,8 +88,12 @@ ${_generateFontClasses()}
 .ql-editor ul[data-checked="true"] > li::before { content: '☑'; margin-right: 8px; color: #c45d35; }
 .ql-editor ul[data-checked="false"] > li::before { content: '☐'; margin-right: 8px; color: #c45d35; }
 
-/* Media styles */
-.ql-editor img { max-width: 100%; border-radius: 8px; }
+/* Media styles - inline width/height styles have highest specificity and will be preserved */
+.ql-editor img { 
+  max-width: 100%; 
+  border-radius: 8px; 
+  /* Note: Inline styles (style="width: 500px; height: 300px;") override CSS defaults */
+}
 .ql-editor iframe, .ql-editor video, .ql-editor .ql-video { 
   max-width: 100%; 
   display: block; 
@@ -97,15 +101,80 @@ ${_generateFontClasses()}
   border-radius: 8px;
 }
 
-/* Media alignment */
-.ql-editor img.align-left, .ql-editor iframe.align-left, .ql-editor video.align-left {
-  float: left; margin-right: 16px; margin-bottom: 8px;
+/* Media alignment - must use !important to override inline styles */
+.ql-editor img.align-left, 
+.ql-editor iframe.align-left, 
+.ql-editor video.align-left {
+  float: left !important;
+  margin-right: 16px !important;
+  margin-left: 0 !important;
+  margin-bottom: 8px;
+  display: inline !important;
 }
-.ql-editor img.align-center, .ql-editor iframe.align-center, .ql-editor video.align-center {
-  display: block; margin-left: auto; margin-right: auto; margin-top: 16px; margin-bottom: 16px;
+.ql-editor img.align-center, 
+.ql-editor iframe.align-center, 
+.ql-editor video.align-center {
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-top: 16px;
+  margin-bottom: 16px;
+  float: none !important;
 }
-.ql-editor img.align-right, .ql-editor iframe.align-right, .ql-editor video.align-right {
-  float: right; margin-left: 16px; margin-bottom: 8px;
+.ql-editor img.align-right, 
+.ql-editor iframe.align-right, 
+.ql-editor video.align-right {
+  float: right !important;
+  margin-left: 16px !important;
+  margin-right: 0 !important;
+  margin-bottom: 8px;
+  display: inline !important;
+}
+
+/* Override iframe default width for aligned items */
+.ql-editor iframe.align-left,
+.ql-editor iframe.align-right {
+  width: auto;
+  aspect-ratio: auto;
+}
+
+/* Print-specific styles to ensure media alignment and sizing is preserved */
+@media print {
+  /* Ensure inline width/height styles are respected in print */
+  .ql-editor img[style*="width"] {
+    /* Inline width has highest specificity, but ensure it's not overridden */
+    max-width: 100% !important; /* Still respect page width */
+  }
+  /* Ensure alignment works correctly in print */
+  .ql-editor img.align-left,
+  .ql-editor iframe.align-left,
+  .ql-editor video.align-left {
+    float: left !important;
+    display: inline !important;
+    margin-right: 16px !important;
+    margin-left: 0 !important;
+  }
+  .ql-editor img.align-center,
+  .ql-editor iframe.align-center,
+  .ql-editor video.align-center {
+    display: block !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    float: none !important;
+  }
+  .ql-editor img.align-right,
+  .ql-editor iframe.align-right,
+  .ql-editor video.align-right {
+    float: right !important;
+    display: inline !important;
+    margin-left: 16px !important;
+    margin-right: 0 !important;
+  }
+  /* Ensure page breaks don't break alignment */
+  .ql-editor img.align-left,
+  .ql-editor img.align-right {
+    page-break-inside: avoid;
+  }
 }
 
 /* Text formatting */

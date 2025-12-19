@@ -9,6 +9,82 @@ import { preprocessHtml, extractBodyContent } from './utils.js';
 import { sendContentChange, sendContentsResponse, sendZoomChange } from './flutter-bridge.js';
 
 /**
+ * Store image dimensions and alignment from HTML before conversion
+ * @param {string} htmlContent - HTML content to extract styles from
+ * @returns {Map} Map of image src to style properties
+ */
+function storeImageStyles(htmlContent) {
+  const tempStore = document.createElement('div');
+  tempStore.innerHTML = htmlContent;
+  const imageStyles = new Map();
+  
+  tempStore.querySelectorAll('img, video, iframe').forEach(media => {
+    const src = media.src || media.getAttribute('src');
+    if (src) {
+      imageStyles.set(src, {
+        width: media.style.width || media.getAttribute('width'),
+        height: media.style.height || media.getAttribute('height'),
+        alignClass: Array.from(media.classList).find(cls => 
+          cls === 'align-left' || cls === 'align-center' || cls === 'align-right'
+        )
+      });
+    }
+  });
+  
+  return imageStyles;
+}
+
+/**
+ * Restore image dimensions and alignment after Quill conversion
+ * @param {Object} editor - Quill editor instance
+ * @param {Map} imageStyles - Map of image src to style properties
+ * @returns {boolean} True if any styles were restored
+ */
+function restoreImageStyles(editor, imageStyles) {
+  let stylesRestored = false;
+  let foundAnyMedia = false;
+  
+  editor.root.querySelectorAll('img, video, iframe').forEach(media => {
+    foundAnyMedia = true;
+    const src = media.src || media.getAttribute('src');
+    if (src && imageStyles.has(src)) {
+      const styles = imageStyles.get(src);
+      
+      // Restore width if missing
+      if (styles.width && !media.style.width) {
+        const widthValue = styles.width.includes('px') || styles.width.includes('%') || 
+                          styles.width.includes('em') || styles.width.includes('rem')
+          ? styles.width 
+          : styles.width + 'px';
+        media.style.width = widthValue;
+        stylesRestored = true;
+      }
+      
+      // Restore height if missing
+      if (styles.height && !media.style.height) {
+        const heightValue = styles.height.includes('px') || styles.height.includes('%') || 
+                           styles.height.includes('em') || styles.height.includes('rem')
+          ? styles.height 
+          : styles.height + 'px';
+        media.style.height = heightValue;
+        stylesRestored = true;
+      }
+      
+      // Restore alignment class if missing
+      if (styles.alignClass && !media.classList.contains(styles.alignClass)) {
+        media.classList.remove('align-left', 'align-center', 'align-right');
+        media.classList.add(styles.alignClass);
+        stylesRestored = true;
+      }
+    }
+  });
+  
+  // Return true if we found media but styles weren't restored (means styles were already present)
+  // Return false if no media found (might need to retry)
+  return foundAnyMedia ? stylesRestored : null;
+}
+
+/**
  * Handle commands from Flutter
  * @param {Object} data - Command data
  * @param {Object} editor - Quill editor instance
@@ -32,6 +108,9 @@ export function handleCommand(data, editor, Quill) {
         // Pre-process to convert inline font styles to Quill classes and normalize colors
         htmlContent = preprocessHtml(htmlContent);
         
+        // Store image dimensions before conversion (in case Quill strips them)
+        const imageStyles = storeImageStyles(htmlContent);
+        
         // Convert HTML to Delta for proper format handling (including colors)
         const tempContainer = document.createElement('div');
         tempContainer.innerHTML = htmlContent;
@@ -46,6 +125,29 @@ export function handleCommand(data, editor, Quill) {
           const range = editor.getSelection();
           const index = range ? range.index : editor.getLength();
           editor.updateContents(new Delta().retain(index).concat(delta), Quill.sources.USER);
+        }
+        
+        // Try to restore image dimensions synchronously first
+        let restoreResult = restoreImageStyles(editor, imageStyles);
+        
+        // If media elements weren't found yet, retry after DOM updates
+        if (restoreResult === null) {
+          requestAnimationFrame(() => {
+            restoreResult = restoreImageStyles(editor, imageStyles);
+            if (restoreResult === null) {
+              // Still not found, try one more time
+              requestAnimationFrame(() => {
+                if (restoreImageStyles(editor, imageStyles)) {
+                  sendContentChange(editor);
+                }
+              });
+            } else if (restoreResult) {
+              sendContentChange(editor);
+            }
+          });
+        } else if (restoreResult) {
+          // Styles were restored synchronously, notify Flutter
+          sendContentChange(editor);
         }
         
         // Notify Flutter of the content change
@@ -68,13 +170,29 @@ export function handleCommand(data, editor, Quill) {
         // Extract body content if it's a full HTML document
         let htmlContent = extractBodyContent(data.html);
         
+        // Check for nested tables before processing
+        const tempCheck = document.createElement('div');
+        tempCheck.innerHTML = htmlContent;
+        const hasNestedTables = tempCheck.querySelector('td table, th table') !== null;
+        
+        if (hasNestedTables) {
+          console.warn('[HTML Parsing] Nested tables detected - quill-table-better may not support this');
+          console.log('[HTML Parsing] Nested table HTML:', tempCheck.querySelector('td table, th table')?.outerHTML);
+        }
+        
         // Pre-process to convert inline font styles to Quill classes and normalize colors
         htmlContent = preprocessHtml(htmlContent);
+        
+        // Store image dimensions before conversion (in case Quill strips them)
+        const imageStyles = storeImageStyles(htmlContent);
         
         // Convert HTML to Delta for proper format handling (including colors)
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlContent;
         const insertDelta = editor.clipboard.convert({ html: htmlContent, text: tempDiv.innerText });
+        
+        // Note: Nested tables will likely be stripped by quill-table-better during conversion
+        // This is a known limitation of the module
         
         if (data.replace) {
           // Replace all content
@@ -84,6 +202,29 @@ export function handleCommand(data, editor, Quill) {
           const range = editor.getSelection();
           const index = range ? range.index : editor.getLength();
           editor.updateContents(new Delta().retain(index).concat(insertDelta), Quill.sources.USER);
+        }
+        
+        // Try to restore image dimensions synchronously first
+        let restoreResult = restoreImageStyles(editor, imageStyles);
+        
+        // If media elements weren't found yet, retry after DOM updates
+        if (restoreResult === null) {
+          requestAnimationFrame(() => {
+            restoreResult = restoreImageStyles(editor, imageStyles);
+            if (restoreResult === null) {
+              // Still not found, try one more time
+              requestAnimationFrame(() => {
+                if (restoreImageStyles(editor, imageStyles)) {
+                  sendContentChange(editor);
+                }
+              });
+            } else if (restoreResult) {
+              sendContentChange(editor);
+            }
+          });
+        } else if (restoreResult) {
+          // Styles were restored synchronously, notify Flutter
+          sendContentChange(editor);
         }
         
         // Notify Flutter of the content change

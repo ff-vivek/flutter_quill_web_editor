@@ -10,6 +10,16 @@ A powerful, full-featured rich text editor package for **Flutter Web** powered b
   <img src="https://quilljs.com/assets/images/logo.svg" width="120" alt="Quill Logo">
 </p>
 
+## 🎮 Try It Out
+
+Experience the editor live in your browser:
+
+**[🚀 Live Playground](https://flourishing-lollipop-18e8de.netlify.app/)**
+
+Try all the features including rich text formatting, tables, media embedding, zoom controls, and more!
+
+---
+
 ## ✨ Features
 
 | Feature | Description |
@@ -65,6 +75,8 @@ import 'package:quill_web_editor/quill_web_editor.dart';
 ---
 
 ## 🚀 Quick Start
+
+> 💡 **New to Quill Web Editor?** Try the [live playground](https://flourishing-lollipop-18e8de.netlify.app/) to see it in action before diving into code!
 
 ### Basic Editor
 

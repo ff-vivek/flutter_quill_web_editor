@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:ui_web' as ui;
-import 'dart:convert';
+
+import 'package:flutter/material.dart';
 
 import '../core/constants/editor_config.dart';
 

@@ -14,7 +14,7 @@ platforms:
 dependencies:
   flutter:
     sdk: flutter
-  google_fonts: 6.1.0
+  google_fonts: ^6.1.0
   pointer_interceptor: ^0.10.1+2
 
 dev_dependencies:

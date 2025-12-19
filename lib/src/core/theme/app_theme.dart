@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
-import '../constants/app_fonts.dart';
 
 /// Theme configuration for the Quill Web Editor package.
 abstract class AppTheme {
@@ -34,15 +33,15 @@ abstract class AppTheme {
       fillColor: AppColors.background,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: AppColors.border),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: AppColors.border),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: AppColors.accent, width: 2),
+        borderSide: const BorderSide(color: AppColors.accent, width: 2),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(

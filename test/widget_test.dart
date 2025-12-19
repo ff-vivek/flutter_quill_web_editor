@@ -226,10 +226,10 @@ void main() {
   group('StatCardRow Widget Tests', () {
     testWidgets('Should render multiple stats', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: StatCardRow(
-              stats: const [
+              stats: [
                 (label: 'Words', value: '100', icon: null),
                 (label: 'Characters', value: '500', icon: null),
               ],

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<!--
+  ============================================
+  Quill Editor for Flutter WebView
+  ============================================
+  Version: 2.0.0
+  Last Updated: 2025-12-17
+  
+  CHANGELOG:
+  ----------
+  v2.0.0 (2025-12-17)
+    - Refactored to use modular CSS and JavaScript
+    - Extracted styles to /styles/ directory
+    - Extracted scripts to /js/ directory
+    - Improved maintainability and reusability
+  
+  v1.9.0 (2025-12-17)
+    - Added cell/column resize detection for quill-table-better
+    - Added MutationObserver to detect table style changes
+    - Cell resize now triggers content update and save
+  
+  [Previous changelog entries preserved in individual modules]
+  ============================================
+-->
+<html lang="en">
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quill Editor v2.0.0</title>
+  
+  <!-- External CSS Dependencies -->
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css" rel="stylesheet">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=DM+Sans:wght@400;500;600&family=Roboto:wght@400;500&family=Open+Sans:wght@400;500&family=Lato:wght@400;700&family=Montserrat:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Package Styles (from quill_web_editor package) -->
+  <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/base.css">
+  <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/quill-theme.css">
+  <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/fonts.css">
+  <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/sizes.css">
+  <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/tables.css">
+  <link rel="stylesheet" href="/assets/packages/quill_web_editor/web/styles/media.css">
+  
+  <!-- Custom Font: Mulish (loads after package CSS for proper override precedence) -->
+  <link rel="stylesheet" href="styles/mulish-font.css">
+</head>
+<body>
+  <div id="editor-container">
+    <div id="editor"></div>
+  </div>
+
+  <!-- Media Drag Icon (appears on hover) -->
+  <div class="media-drag-icon" id="mediaDragIcon">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <path d="M14 2L2 14M14 2v5M14 2h-5M2 14v-5M2 14h5"/>
+    </svg>
+  </div>
+
+  <!-- Resize Tooltip (shows percentage while dragging) -->
+  <div class="resize-tooltip" id="resizeTooltip">50%</div>
+  
+  <!-- Table Drag Icon (appears on table hover) -->
+  <div class="table-drag-icon" id="tableDragIcon">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <path d="M14 2L2 14M14 2v5M14 2h-5M2 14v-5M2 14h5"/>
+    </svg>
+  </div>
+
+  <!-- Media Resizer -->
+  <div class="media-resizer" id="mediaResizer">
+    <div class="resize-handle nw" data-handle="nw"></div>
+    <div class="resize-handle ne" data-handle="ne"></div>
+    <div class="resize-handle sw" data-handle="sw"></div>
+    <div class="resize-handle se" data-handle="se"></div>
+    <div class="resize-handle n" data-handle="n"></div>
+    <div class="resize-handle s" data-handle="s"></div>
+    <div class="resize-handle e" data-handle="e"></div>
+    <div class="resize-handle w" data-handle="w"></div>
+    <div class="media-toolbar">
+      <div class="media-toolbar-row">
+        <button class="media-align-btn" data-align="left" title="Align left">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 2h12M1 5h8M1 8h12M1 11h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="media-align-btn" data-align="center" title="Center">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 2h12M3 5h8M1 8h12M3 11h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="media-align-btn" data-align="right" title="Align right">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 2h12M5 5h8M1 8h12M5 11h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <div class="media-toolbar-divider"></div>
+        <button class="media-size-btn" data-size="25" title="25% width">25%</button>
+        <button class="media-size-btn" data-size="50" title="50% width">50%</button>
+        <button class="media-size-btn" data-size="75" title="75% width">75%</button>
+        <button class="media-size-btn" data-size="100" title="Full width">100%</button>
+      </div>
+      <div class="media-toolbar-row">
+        <span class="media-size-display" id="mediaSizeDisplay">0 × 0</span>
+        <button class="media-action-btn" id="mediaResetBtn" title="Reset size">
+          <svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 4V1h3M11 8v3H8M1 1l4 4M11 11l-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Reset
+        </button>
+        <button class="media-action-btn media-delete-btn" id="mediaDeleteBtn" title="Delete">
+          <svg width="12" height="12" viewBox="0 0 12 12"><path d="M1.5 3h9M4.5 3V2a1 1 0 011-1h1a1 1 0 011 1v1M9 3v6.5a1 1 0 01-1 1H4a1 1 0 01-1-1V3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- External JS Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.js"></script>
+  
+  <!-- Application Entry Point -->
+  <script type="module">
+    import { initializeQuill } from './js/quill-setup-override.js';
+    import { setupPasteHandler, setupSelectionPreservation } from './js/clipboard-override.js';
+    import { setupCommandListener } from '/assets/packages/quill_web_editor/web/js/commands.js';
+    import { setupMediaResize } from '/assets/packages/quill_web_editor/web/js/media-resize.js';
+    import { setupTableResize } from '/assets/packages/quill_web_editor/web/js/table-resize.js';
+    import { setupDragDrop, setupMediaObserver } from '/assets/packages/quill_web_editor/web/js/drag-drop.js';
+    import { sendReady, sendContentChange } from '/assets/packages/quill_web_editor/web/js/flutter-bridge.js';
+
+    // Initialize Quill editor
+    const editor = initializeQuill(Quill, QuillTableBetter);
+
+    // Set up clipboard handling
+    setupPasteHandler(editor, Quill);
+    setupSelectionPreservation(editor);
+
+    // Set up command handling from Flutter
+    setupCommandListener(editor, Quill);
+
+    // Set up media resize controls
+    setupMediaResize(editor, Quill);
+
+    // Set up table resize controls
+    setupTableResize(editor);
+
+    // Set up drag & drop handling
+    setupDragDrop(editor);
+    setupMediaObserver(editor);
+
+    // Listen for content changes
+    editor.on('text-change', function(delta, oldDelta, source) {
+      if (source === 'user') {
+        sendContentChange(editor);
+      }
+    });
+
+    // Signal ready when window loads
+    window.addEventListener('load', function() {
+      sendReady();
+    });
+  </script>
+</body>
+</html>

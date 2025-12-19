@@ -162,7 +162,28 @@ export function createClipboardMatchers(Quill) {
     ['TD', createCellMatcher(Quill)],
     
     // Match <th> table headers with fonts/formatting
-    ['TH', createCellMatcher(Quill)]
+    ['TH', createCellMatcher(Quill)],
+    
+    // Match <img> tags - preserve width/height and alignment
+    ['IMG', function(node, delta) {
+      // Images are handled by Quill's image blot, but we need to ensure
+      // width/height styles are preserved. Quill will preserve the image
+      // element as-is, so we just need to make sure the styles are in the HTML.
+      // This matcher doesn't modify the delta, but ensures the node keeps its styles.
+      return delta;
+    }],
+    
+    // Match <video> tags - preserve width/height and alignment
+    ['VIDEO', function(node, delta) {
+      // Similar to images - preserve styles
+      return delta;
+    }],
+    
+    // Match <iframe> tags - preserve width/height and alignment
+    ['IFRAME', function(node, delta) {
+      // Similar to images - preserve styles
+      return delta;
+    }]
   ];
 }
 

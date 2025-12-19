@@ -111,6 +111,8 @@ QuillEditorWidget(
 
 ## 📖 API Reference
 
+For detailed developer documentation, including architecture, feature deep-dives, and extension guides, see the [Developer Guide](DEVELOPER_GUIDE.md).
+
 ### QuillEditorWidget
 
 The main editor widget that embeds Quill.js via an iframe.

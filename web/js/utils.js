@@ -178,6 +178,67 @@ export function preprocessHtml(html) {
       el.className = (el.className ? el.className + ' ' : '') + classes.join(' ');
     }
     
+    // Special handling for images, videos, and iframes - preserve width/height and alignment
+    if (el.tagName === 'IMG' || el.tagName === 'VIDEO' || el.tagName === 'IFRAME') {
+      // Convert width/height attributes to inline styles (Quill preserves inline styles better)
+      if (el.hasAttribute('width')) {
+        const widthAttr = el.getAttribute('width');
+        if (widthAttr && widthAttr.trim()) {
+          // Convert attribute to inline style if not already present
+          if (!style.width || style.width === 'auto' || style.width === '') {
+            const widthValue = widthAttr.trim();
+            // Add 'px' if it's a number without unit
+            if (/^\d+$/.test(widthValue)) {
+              style.width = widthValue + 'px';
+            } else if (widthValue.includes('%') || widthValue.includes('px') || widthValue.includes('em') || widthValue.includes('rem')) {
+              style.width = widthValue;
+            } else {
+              style.width = widthValue + 'px';
+            }
+          }
+        }
+      }
+      
+      if (el.hasAttribute('height')) {
+        const heightAttr = el.getAttribute('height');
+        if (heightAttr && heightAttr.trim()) {
+          // Convert attribute to inline style if not already present
+          if (!style.height || style.height === 'auto' || style.height === '') {
+            const heightValue = heightAttr.trim();
+            // Add 'px' if it's a number without unit
+            if (/^\d+$/.test(heightValue)) {
+              style.height = heightValue + 'px';
+            } else if (heightValue.includes('%') || heightValue.includes('px') || heightValue.includes('em') || heightValue.includes('rem')) {
+              style.height = heightValue;
+            } else {
+              style.height = heightValue + 'px';
+            }
+          }
+        }
+      }
+      
+      // Ensure width/height styles are preserved (don't remove them)
+      // They will be kept in the inline style attribute
+      
+      // Preserve or detect alignment classes
+      const existingClasses = el.className ? el.className.split(/\s+/) : [];
+      const hasAlignmentClass = existingClasses.some(cls => 
+        cls === 'align-left' || cls === 'align-center' || cls === 'align-right'
+      );
+      
+      if (!hasAlignmentClass) {
+        // Detect alignment from styles and add class
+        if (style.float === 'left' || (style.textAlign && style.textAlign.includes('left'))) {
+          el.classList.add('align-left');
+        } else if (style.float === 'right' || (style.textAlign && style.textAlign.includes('right'))) {
+          el.classList.add('align-right');
+        } else if ((style.marginLeft === 'auto' && style.marginRight === 'auto') || 
+                   (style.textAlign && style.textAlign.includes('center'))) {
+          el.classList.add('align-center');
+        }
+      }
+    }
+    
     // Special handling for table cells (TD, TH) - wrap text content in span with formatting
     if ((el.tagName === 'TD' || el.tagName === 'TH') && (fontClass || sizeClass || colorStyle)) {
       const hasFormattedChildren = el.querySelector('span[class*="ql-font"], span[class*="ql-size"]');

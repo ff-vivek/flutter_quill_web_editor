@@ -87,19 +87,17 @@ void main() {
       final css = ExportStyles.fullCss;
 
       expect(css.contains(".ql-font-roboto { font-family: 'Roboto'"), isTrue);
-      expect(
-          css.contains(".ql-font-open-sans { font-family: 'Open Sans'"), isTrue);
+      expect(css.contains(".ql-font-open-sans { font-family: 'Open Sans'"),
+          isTrue);
       expect(css.contains(".ql-font-lato { font-family: 'Lato'"), isTrue);
       expect(css.contains(".ql-font-montserrat { font-family: 'Montserrat'"),
           isTrue);
       expect(
-          css.contains(
-              ".ql-font-source-code { font-family: 'Source Code Pro'"),
+          css.contains(".ql-font-source-code { font-family: 'Source Code Pro'"),
           isTrue);
-      expect(
-          css.contains(".ql-font-crimson { font-family: 'Crimson Pro'"), isTrue);
-      expect(
-          css.contains(".ql-font-dm-sans { font-family: 'DM Sans'"), isTrue);
+      expect(css.contains(".ql-font-crimson { font-family: 'Crimson Pro'"),
+          isTrue);
+      expect(css.contains(".ql-font-dm-sans { font-family: 'DM Sans'"), isTrue);
     });
 
     test('Should include all required Google Fonts in link', () {
@@ -266,7 +264,8 @@ void main() {
 
       expect(css.contains('.ql-align-center { text-align: center; }'), isTrue);
       expect(css.contains('.ql-align-right { text-align: right; }'), isTrue);
-      expect(css.contains('.ql-align-justify { text-align: justify; }'), isTrue);
+      expect(
+          css.contains('.ql-align-justify { text-align: justify; }'), isTrue);
     });
 
     test('Should include RTL direction style', () {
@@ -489,4 +488,3 @@ void main() {
     });
   });
 }
-

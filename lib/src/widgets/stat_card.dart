@@ -94,4 +94,3 @@ class StatCardRow extends StatelessWidget {
     );
   }
 }
-

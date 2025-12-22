@@ -36,8 +36,16 @@ void main() {
     });
 
     test('Commands should be valid JSON', () {
-      final undoCommand = {'action': 'undo', 'source': 'flutter', 'type': 'command'};
-      final redoCommand = {'action': 'redo', 'source': 'flutter', 'type': 'command'};
+      final undoCommand = {
+        'action': 'undo',
+        'source': 'flutter',
+        'type': 'command'
+      };
+      final redoCommand = {
+        'action': 'redo',
+        'source': 'flutter',
+        'type': 'command'
+      };
 
       expect(() => jsonEncode(undoCommand), returnsNormally);
       expect(() => jsonEncode(redoCommand), returnsNormally);
@@ -198,7 +206,8 @@ void main() {
 
       operations.add({'action': 'format', 'format': 'font', 'value': 'roboto'});
       operations.add({'action': 'format', 'format': 'font', 'value': 'lato'});
-      operations.add({'action': 'format', 'format': 'font', 'value': 'montserrat'});
+      operations
+          .add({'action': 'format', 'format': 'font', 'value': 'montserrat'});
       operations.add({'action': 'undo'}); // Reverts to lato
       operations.add({'action': 'undo'}); // Reverts to roboto
 
@@ -208,7 +217,8 @@ void main() {
     test('Font change should be redoable after undo', () {
       final operations = <Map<String, dynamic>>[];
 
-      operations.add({'action': 'format', 'format': 'font', 'value': 'open-sans'});
+      operations
+          .add({'action': 'format', 'format': 'font', 'value': 'open-sans'});
       operations.add({'action': 'undo'});
       operations.add({'action': 'redo'});
 
@@ -274,7 +284,8 @@ void main() {
     test('Text color change should be undoable', () {
       final operations = <Map<String, dynamic>>[];
 
-      operations.add({'action': 'format', 'format': 'color', 'value': '#ff0000'});
+      operations
+          .add({'action': 'format', 'format': 'color', 'value': '#ff0000'});
       operations.add({'action': 'undo'});
 
       expect(operations.length, equals(2));
@@ -284,9 +295,12 @@ void main() {
     test('Multiple color changes should undo in reverse order', () {
       final operations = <Map<String, dynamic>>[];
 
-      operations.add({'action': 'format', 'format': 'color', 'value': '#ff0000'}); // Red
-      operations.add({'action': 'format', 'format': 'color', 'value': '#00ff00'}); // Green
-      operations.add({'action': 'format', 'format': 'color', 'value': '#0000ff'}); // Blue
+      operations.add(
+          {'action': 'format', 'format': 'color', 'value': '#ff0000'}); // Red
+      operations.add(
+          {'action': 'format', 'format': 'color', 'value': '#00ff00'}); // Green
+      operations.add(
+          {'action': 'format', 'format': 'color', 'value': '#0000ff'}); // Blue
       operations.add({'action': 'undo'}); // Reverts to Green
       operations.add({'action': 'undo'}); // Reverts to Red
 
@@ -296,7 +310,8 @@ void main() {
     test('Color change should be redoable', () {
       final operations = <Map<String, dynamic>>[];
 
-      operations.add({'action': 'format', 'format': 'color', 'value': '#purple'});
+      operations
+          .add({'action': 'format', 'format': 'color', 'value': '#purple'});
       operations.add({'action': 'undo'});
       operations.add({'action': 'redo'});
 
@@ -322,7 +337,8 @@ void main() {
     test('Background color change should be undoable', () {
       final operations = <Map<String, dynamic>>[];
 
-      operations.add({'action': 'format', 'format': 'background', 'value': '#ffff00'});
+      operations.add(
+          {'action': 'format', 'format': 'background', 'value': '#ffff00'});
       operations.add({'action': 'undo'});
 
       expect(operations.length, equals(2));
@@ -332,8 +348,10 @@ void main() {
     test('Background and text color combined should be undoable', () {
       final operations = <Map<String, dynamic>>[];
 
-      operations.add({'action': 'format', 'format': 'color', 'value': '#ffffff'});
-      operations.add({'action': 'format', 'format': 'background', 'value': '#000000'});
+      operations
+          .add({'action': 'format', 'format': 'color', 'value': '#ffffff'});
+      operations.add(
+          {'action': 'format', 'format': 'background', 'value': '#000000'});
       operations.add({'action': 'undo'}); // Reverts background
       operations.add({'action': 'undo'}); // Reverts text color
 
@@ -463,7 +481,8 @@ void main() {
       final operations = <Map<String, dynamic>>[];
 
       operations.add({'action': 'format', 'format': 'bold', 'value': true});
-      operations.add({'action': 'format', 'format': 'color', 'value': '#ff0000'});
+      operations
+          .add({'action': 'format', 'format': 'color', 'value': '#ff0000'});
       operations.add({'action': 'format', 'format': 'size', 'value': 'large'});
       operations.add({'action': 'undo'}); // Undo size
       operations.add({'action': 'undo'}); // Undo color
@@ -500,7 +519,8 @@ void main() {
     test('Checklist formatting should be undoable', () {
       final operations = <Map<String, dynamic>>[];
 
-      operations.add({'action': 'format', 'format': 'list', 'value': 'checked'});
+      operations
+          .add({'action': 'format', 'format': 'list', 'value': 'checked'});
       operations.add({'action': 'undo'});
 
       expect(operations.length, equals(2));
@@ -524,14 +544,22 @@ void main() {
 
   group('Edge Cases', () {
     test('Undo on empty editor should not crash', () {
-      final command = {'action': 'undo', 'source': 'flutter', 'type': 'command'};
+      final command = {
+        'action': 'undo',
+        'source': 'flutter',
+        'type': 'command'
+      };
 
       // Should be a valid command structure
       expect(() => jsonEncode(command), returnsNormally);
     });
 
     test('Redo without prior undo should not crash', () {
-      final command = {'action': 'redo', 'source': 'flutter', 'type': 'command'};
+      final command = {
+        'action': 'redo',
+        'source': 'flutter',
+        'type': 'command'
+      };
 
       // Should be a valid command structure
       expect(() => jsonEncode(command), returnsNormally);
@@ -548,7 +576,8 @@ void main() {
       operations.add({'action': 'undo'});
 
       expect(operations.length, equals(6));
-      expect(operations.where((op) => op['action'] == 'undo').length, equals(3));
+      expect(
+          operations.where((op) => op['action'] == 'undo').length, equals(3));
     });
 
     test('Redo stack should clear after new edit', () {
@@ -557,7 +586,8 @@ void main() {
 
       operations.add({'action': 'insertText', 'text': 'Original'});
       operations.add({'action': 'undo'});
-      operations.add({'action': 'insertText', 'text': 'New'}); // Clears redo stack
+      operations
+          .add({'action': 'insertText', 'text': 'New'}); // Clears redo stack
       // Redo at this point should have no effect (redo stack is empty)
       operations.add({'action': 'redo'});
 
@@ -571,9 +601,10 @@ void main() {
       operations.add({'action': 'insertText', 'text': 'Hello'});
       operations.add({'action': 'format', 'format': 'bold', 'value': true});
       operations.add({'action': 'insertTable', 'rows': 2, 'cols': 2});
-      operations.add({'action': 'format', 'format': 'color', 'value': '#ff0000'});
+      operations
+          .add({'action': 'format', 'format': 'color', 'value': '#ff0000'});
       operations.add({'action': 'format', 'format': 'font', 'value': 'roboto'});
-      
+
       // Undo all in reverse
       operations.add({'action': 'undo'});
       operations.add({'action': 'undo'});
@@ -582,7 +613,8 @@ void main() {
       operations.add({'action': 'undo'});
 
       expect(operations.length, equals(10));
-      expect(operations.where((op) => op['action'] == 'undo').length, equals(5));
+      expect(
+          operations.where((op) => op['action'] == 'undo').length, equals(5));
     });
   });
 
@@ -625,7 +657,8 @@ void main() {
     test('Underline formatting should be undoable', () {
       final operations = <Map<String, dynamic>>[];
 
-      operations.add({'action': 'format', 'format': 'underline', 'value': true});
+      operations
+          .add({'action': 'format', 'format': 'underline', 'value': true});
       operations.add({'action': 'undo'});
 
       expect(operations.length, equals(2));
@@ -661,7 +694,8 @@ void main() {
     test('Alignment change should be undoable', () {
       final operations = <Map<String, dynamic>>[];
 
-      operations.add({'action': 'format', 'format': 'align', 'value': 'center'});
+      operations
+          .add({'action': 'format', 'format': 'align', 'value': 'center'});
       operations.add({'action': 'undo'});
 
       expect(operations.length, equals(2));
@@ -689,6 +723,3 @@ void main() {
     });
   });
 }
-
-
-

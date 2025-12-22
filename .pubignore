@@ -17,3 +17,16 @@ DEVELOPER_GUIDE.md
 GEMINI.md
 package_deployment.sh
 package_deployment_README.md
+
+# Exclude .dart_tool directories (build artifacts)
+.dart_tool/
+**/.dart_tool/
+example/.dart_tool/
+example/**/.dart_tool/
+
+# Exclude publish script
+publish.sh
+
+# Exclude deployment artifacts
+quill-editor-deployment_*.zip
+*.zip

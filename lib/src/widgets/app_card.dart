@@ -71,7 +71,7 @@ class AppCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04 + (elevation * 0.02)),
+            color: Colors.black.withValues(alpha: 0.04 + (elevation * 0.02)),
             blurRadius: 8 + (elevation * 4),
             offset: Offset(0, 2 + elevation),
           ),
@@ -84,4 +84,3 @@ class AppCard extends StatelessWidget {
     );
   }
 }
-

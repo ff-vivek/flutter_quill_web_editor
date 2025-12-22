@@ -38,7 +38,6 @@ abstract class AppColors {
 
   /// Creates a color with the specified opacity
   static Color withOpacity(Color color, double opacity) {
-    return color.withOpacity(opacity);
+    return color.withValues(alpha: opacity);
   }
 }
-

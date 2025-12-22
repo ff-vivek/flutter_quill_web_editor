@@ -85,7 +85,8 @@ abstract class HtmlCleaner {
     if (trimmed.startsWith('#')) return trimmed;
 
     // RGB/RGBA format
-    final rgbMatch = RegExp(r'rgba?\((\d+),\s*(\d+),\s*(\d+)').firstMatch(trimmed);
+    final rgbMatch =
+        RegExp(r'rgba?\((\d+),\s*(\d+),\s*(\d+)').firstMatch(trimmed);
     if (rgbMatch != null) {
       final r = int.parse(rgbMatch.group(1)!).toRadixString(16).padLeft(2, '0');
       final g = int.parse(rgbMatch.group(2)!).toRadixString(16).padLeft(2, '0');
@@ -96,4 +97,3 @@ abstract class HtmlCleaner {
     return trimmed;
   }
 }
-

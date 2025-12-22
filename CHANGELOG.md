@@ -5,12 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2025-12-19
+
+### Fixed
+- Fixed issues with pub publishing.
+
 ## [1.0.1] - 2025-12-19
 
 ### Fixed
 - Corrected dependency constraints for `google_fonts`.
 - Renamed `docs` directory to `doc` to follow pub.dev conventions.
 - Updated `.gitignore` to exclude unnecessary files from the package.
+- Fixed deprecated `withOpacity()` calls - replaced with `withValues()` for Flutter compatibility.
+- Removed invalid lint rule `use_late_for_private_fields_used_only_in_tests` from analysis_options.yaml.
+- Suppressed `dart:html` deprecation warnings (intentional for web-only package).
+- Replaced `print()` with `debugPrint()` in example code.
+
+### Changed
+- Updated repository URLs to point to `https://github.com/ff-vivek/flutter_quill_web_editor`.
+- Updated README with live playground link: https://flourishing-lollipop-18e8de.netlify.app/.
+- Added `example` field to pubspec.yaml for pub.dev.
+- Updated `.pubignore` to exclude build artifacts, publish script, and deployment files.
+- Package size reduced from 901 KB to 65 KB by excluding unnecessary files.
 
 ## [1.0.0] - 2024-12-17
 

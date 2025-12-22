@@ -17,9 +17,14 @@ abstract class AppFonts {
     FontConfig(name: 'Roboto', value: 'roboto', fontFamily: 'Roboto'),
     FontConfig(name: 'Open Sans', value: 'open-sans', fontFamily: 'Open Sans'),
     FontConfig(name: 'Lato', value: 'lato', fontFamily: 'Lato'),
-    FontConfig(name: 'Montserrat', value: 'montserrat', fontFamily: 'Montserrat'),
-    FontConfig(name: 'Source Code', value: 'source-code', fontFamily: 'Source Code Pro'),
-    FontConfig(name: 'Crimson Pro', value: 'crimson', fontFamily: 'Crimson Pro'),
+    FontConfig(
+        name: 'Montserrat', value: 'montserrat', fontFamily: 'Montserrat'),
+    FontConfig(
+        name: 'Source Code',
+        value: 'source-code',
+        fontFamily: 'Source Code Pro'),
+    FontConfig(
+        name: 'Crimson Pro', value: 'crimson', fontFamily: 'Crimson Pro'),
     FontConfig(name: 'DM Sans', value: 'dm-sans', fontFamily: 'DM Sans'),
   ];
 
@@ -91,4 +96,3 @@ class LineHeightConfig {
   final String value;
   final String cssClass;
 }
-

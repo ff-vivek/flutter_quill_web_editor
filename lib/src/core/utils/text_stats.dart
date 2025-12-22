@@ -89,4 +89,3 @@ class TextStatistics {
     return 'TextStatistics(words: $wordCount, chars: $charCount, paragraphs: $paragraphCount)';
   }
 }
-

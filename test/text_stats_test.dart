@@ -17,12 +17,14 @@ void main() {
     });
 
     test('Should handle multiple paragraphs', () {
-      final stats = TextStats.fromHtml('<p>First paragraph</p><p>Second paragraph</p>');
+      final stats =
+          TextStats.fromHtml('<p>First paragraph</p><p>Second paragraph</p>');
       expect(stats.wordCount, equals(4));
     });
 
     test('Should handle formatted text', () {
-      final stats = TextStats.fromHtml('<p><strong>Bold</strong> and <em>italic</em> text</p>');
+      final stats = TextStats.fromHtml(
+          '<p><strong>Bold</strong> and <em>italic</em> text</p>');
       expect(stats.wordCount, equals(4)); // "Bold and italic text"
     });
 
@@ -38,17 +40,20 @@ void main() {
     });
 
     test('Should handle tables', () {
-      final stats = TextStats.fromHtml('<table><tr><td>Cell One</td><td>Cell Two</td></tr></table>');
+      final stats = TextStats.fromHtml(
+          '<table><tr><td>Cell One</td><td>Cell Two</td></tr></table>');
       expect(stats.wordCount, equals(4)); // "Cell One Cell Two"
     });
 
     test('Should handle lists', () {
-      final stats = TextStats.fromHtml('<ul><li>Item One</li><li>Item Two</li></ul>');
+      final stats =
+          TextStats.fromHtml('<ul><li>Item One</li><li>Item Two</li></ul>');
       expect(stats.wordCount, equals(4)); // "Item One Item Two"
     });
 
     test('Should handle nested formatting', () {
-      final stats = TextStats.fromHtml('<p><strong><em>Bold Italic</em></strong></p>');
+      final stats =
+          TextStats.fromHtml('<p><strong><em>Bold Italic</em></strong></p>');
       expect(stats.wordCount, equals(2));
     });
 
@@ -80,10 +85,9 @@ void main() {
           <tr><td>Cell 1</td><td>Cell 2</td></tr>
         </table>
       ''');
-      
+
       // Should count all words across all elements
       expect(stats.wordCount, greaterThan(10));
     });
   });
 }
-

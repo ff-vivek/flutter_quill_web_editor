@@ -57,4 +57,3 @@ abstract class EditorConfig {
     'contenteditable',
   ];
 }
-

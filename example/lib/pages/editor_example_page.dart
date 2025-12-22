@@ -128,11 +128,16 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
       title: 'Quill Editor Document',
     );
     final separator = '=' * 80;
-    print(separator);
-    print('Generated HTML Document:');
-    print(separator);
-    print(htmlDocument);
-    print(separator);
+
+    debugPrint(separator);
+
+    debugPrint('Generated HTML Document:');
+
+    debugPrint(separator);
+
+    debugPrint(htmlDocument);
+
+    debugPrint(separator);
     _showSnackBar('HTML document printed to console');
   }
 
@@ -174,7 +179,7 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.accent.withOpacity(0.1),
+                color: AppColors.accent.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(

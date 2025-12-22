@@ -51,7 +51,7 @@ Add to your `pubspec.yaml`:
 dependencies:
   quill_web_editor:
     git:
-      url: https://github.com/icici/quill_web_editor.git
+      url: https://github.com/ff-vivek/flutter_quill_web_editor.git
 ```
 
 ### Step 2: Copy Web Assets

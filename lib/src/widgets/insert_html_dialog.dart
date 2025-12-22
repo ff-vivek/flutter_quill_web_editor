@@ -210,4 +210,3 @@ class _InsertHtmlDialogState extends State<InsertHtmlDialog> {
     );
   }
 }
-

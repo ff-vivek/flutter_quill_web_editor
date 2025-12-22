@@ -162,7 +162,7 @@ dependencies:
     sdk: flutter
   quill_web_editor:
     git:
-      url: https://github.com/icici/quill_web_editor.git
+      url: https://github.com/ff-vivek/flutter_quill_web_editor.git
       ref: main  # Use 'main' for latest, or specific tag/commit for stability
 ```
 

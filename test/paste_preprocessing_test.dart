@@ -214,7 +214,8 @@ void main() {
     });
 
     test('Should map Consolas to source-code', () {
-      expect(PastePreprocessor.mapFontFamily('Consolas'), equals('source-code'));
+      expect(
+          PastePreprocessor.mapFontFamily('Consolas'), equals('source-code'));
     });
 
     test('Should map Monaco to source-code', () {
@@ -346,8 +347,8 @@ void main() {
       // Common font mappings
       expect(PastePreprocessor.fontFamilyMap.containsKey('arial'), isTrue);
       expect(PastePreprocessor.fontFamilyMap.containsKey('georgia'), isTrue);
-      expect(PastePreprocessor.fontFamilyMap.containsKey('courier new'), isTrue);
+      expect(
+          PastePreprocessor.fontFamilyMap.containsKey('courier new'), isTrue);
     });
   });
 }
-

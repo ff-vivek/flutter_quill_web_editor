@@ -33,7 +33,8 @@ void main() {
     });
 
     test('Should remove ql-table-selected class', () {
-      const html = '<table class="ql-table-selected"><tr><td>Cell</td></tr></table>';
+      const html =
+          '<table class="ql-table-selected"><tr><td>Cell</td></tr></table>';
       final cleaned = HtmlCleaner.cleanForExport(html);
 
       expect(cleaned.contains('ql-table-selected'), isFalse);
@@ -300,4 +301,3 @@ void main() {
     });
   });
 }
-

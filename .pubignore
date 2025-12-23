@@ -21,8 +21,7 @@ package_deployment_README.md
 # Exclude .dart_tool directories (build artifacts)
 .dart_tool/
 **/.dart_tool/
-example/.dart_tool/
-example/**/.dart_tool/
+**/chrome-device/
 
 # Exclude publish script
 publish.sh

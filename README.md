@@ -247,16 +247,8 @@ The main editor widget that embeds Quill.js via an iframe.
 
 > **Note:** If no `controller` is provided, an internal controller is created automatically (like `TextField`).
 
-#### State Methods (Legacy)
 
-Access via `GlobalKey<QuillEditorWidgetState>`:
 
-```dart
-final GlobalKey<QuillEditorWidgetState> _editorKey = GlobalKey();
-
-// Later...
-_editorKey.currentState?.methodName();
-```
 
 | Method | Description |
 |--------|-------------|

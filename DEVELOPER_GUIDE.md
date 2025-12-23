@@ -3045,16 +3045,6 @@ export const TOOLBAR_OPTIONS = {
 
 ---
 
-## Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.1.0 | Dec 2024 | QuillEditorController, Custom Actions API, Command Queue, Controllerless mode |
-| 1.0.1 | Dec 2024 | Bug fixes, documentation updates |
-| 1.0.0 | Dec 2024 | Initial release |
-
----
-
 ## License
 
 MIT License - See [LICENSE](LICENSE) for details.

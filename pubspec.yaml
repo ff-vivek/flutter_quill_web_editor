@@ -1,6 +1,6 @@
 name: quill_web_editor
 description: A rich text editor package for Flutter Web powered by Quill.js. Provides full-featured editing with tables, media embedding, custom fonts, and HTML export.
-version: 1.0.2
+version: 1.1.0
 homepage: https://github.com/ff-vivek/flutter_quill_web_editor
 repository: https://github.com/ff-vivek/flutter_quill_web_editor
 issue_tracker: https://github.com/ff-vivek/flutter_quill_web_editor/issues

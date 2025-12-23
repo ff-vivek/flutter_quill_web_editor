@@ -129,3 +129,16 @@ export function sendContentChange(editor) {
   });
 }
 
+/**
+ * Send custom action response to Flutter
+ * @param {string} actionName - Name of the custom action
+ * @param {Object} response - Response data to send back
+ */
+export function sendCustomActionResponse(actionName, response) {
+  sendToFlutter({
+    type: 'customActionResponse',
+    actionName: actionName,
+    response: response
+  });
+}
+

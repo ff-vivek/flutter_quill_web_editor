@@ -25,6 +25,8 @@ Try all the features including rich text formatting, tables, media embedding, zo
 | Feature | Description |
 |---------|-------------|
 | 📝 **Rich Text Editing** | Full formatting toolbar with bold, italic, underline, strikethrough |
+| 🎮 **Controller API** | `QuillEditorController` for programmatic control (like `TextEditingController`) |
+| ⚡ **Custom Actions** | Register and execute user-defined actions with callbacks |
 | 📊 **Table Support** | Create and edit tables with [quill-table-better](https://github.com/attojs/quill-table-better) |
 | 🖼️ **Media Embedding** | Images, videos, and iframes with resize controls |
 | 🎨 **Custom Fonts** | Roboto, Open Sans, Lato, Montserrat, Crimson Pro, DM Sans, Source Code Pro |
@@ -78,7 +80,22 @@ import 'package:quill_web_editor/quill_web_editor.dart';
 
 > 💡 **New to Quill Web Editor?** Try the [live playground](https://flourishing-lollipop-18e8de.netlify.app/) to see it in action before diving into code!
 
-### Basic Editor
+### Simple Usage (No Controller)
+
+When you don't need programmatic access, just use callbacks:
+
+```dart
+QuillEditorWidget(
+  onContentChanged: (html, delta) {
+    print('Content: $html');
+  },
+  initialHtml: '<p>Start writing...</p>',
+)
+```
+
+### Using with Controller (Recommended)
+
+For programmatic control, use `QuillEditorController`:
 
 ```dart
 import 'package:flutter/material.dart';
@@ -92,14 +109,36 @@ class MyEditor extends StatefulWidget {
 }
 
 class _MyEditorState extends State<MyEditor> {
-  final GlobalKey<QuillEditorWidgetState> _editorKey = GlobalKey();
+  final _controller = QuillEditorController();
   String _currentHtml = '';
+
+  @override
+  void dispose() {
+    _controller.dispose();  // You manage the lifecycle
+    super.dispose();
+  }
+
+  void _insertGreeting() {
+    _controller.insertText('Hello, World!');
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        actions: [
+          IconButton(
+            onPressed: _insertGreeting,
+            icon: Icon(Icons.add),
+          ),
+          IconButton(
+            onPressed: () => _controller.undo(),
+            icon: Icon(Icons.undo),
+          ),
+        ],
+      ),
       body: QuillEditorWidget(
-        key: _editorKey,
+        controller: _controller,
         onContentChanged: (html, delta) {
           setState(() => _currentHtml = html);
         },
@@ -125,6 +164,67 @@ QuillEditorWidget(
 
 For detailed developer documentation, including architecture, feature deep-dives, and extension guides, see the [Developer Guide](DEVELOPER_GUIDE.md).
 
+### QuillEditorController
+
+A controller for programmatic access to the editor, similar to `TextEditingController`.
+
+#### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `isReady` | `bool` | Whether editor is ready for commands |
+| `html` | `String` | Current HTML content |
+| `currentZoom` | `double` | Current zoom level (1.0 = 100%) |
+| `registeredActionNames` | `Set<String>` | Names of registered custom actions |
+
+#### Methods
+
+| Method | Description |
+|--------|-------------|
+| `insertText(String text)` | Insert plain text at cursor |
+| `setHTML(String html, {bool replace = true})` | Set editor content from HTML |
+| `insertHtml(String html)` | Insert HTML at cursor position |
+| `setContents(dynamic delta)` | Set content from Quill Delta |
+| `getContents()` | Request current content |
+| `clear()` | Clear all editor content |
+| `focus()` | Focus the editor |
+| `undo()` | Undo the last operation |
+| `redo()` | Redo the last undone operation |
+| `format(String format, dynamic value)` | Apply formatting to selection |
+| `insertTable(int rows, int cols)` | Insert a table at cursor |
+| `zoomIn()` | Increase zoom by 10% |
+| `zoomOut()` | Decrease zoom by 10% |
+| `resetZoom()` | Reset zoom to 100% |
+| `setZoom(double level)` | Set specific zoom level (0.5 - 3.0) |
+
+#### Custom Actions
+
+Register and execute user-defined actions:
+
+```dart
+// Define a reusable action
+final timestampAction = QuillEditorAction(
+  name: 'insertTimestamp',
+  onExecute: () => print('Inserting timestamp...'),
+);
+
+// Register the action
+_controller.registerAction(timestampAction);
+
+// Execute with optional parameters
+_controller.executeAction('insertTimestamp', parameters: {
+  'format': 'ISO',
+});
+
+// Or execute one-off actions without registration
+_controller.executeCustom(
+  actionName: 'insertSignature',
+  parameters: {'name': 'John Doe'},
+);
+```
+
+---
+
 ### QuillEditorWidget
 
 The main editor widget that embeds Quill.js via an iframe.
@@ -133,7 +233,7 @@ The main editor widget that embeds Quill.js via an iframe.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `key` | `GlobalKey<QuillEditorWidgetState>` | - | Key for accessing editor state |
+| `controller` | `QuillEditorController?` | `null` | Controller for programmatic access |
 | `width` | `double?` | `null` | Editor width (expands to fill if null) |
 | `height` | `double?` | `null` | Editor height (expands to fill if null) |
 | `onContentChanged` | `Function(String html, dynamic delta)?` | `null` | Callback when content changes |
@@ -145,16 +245,10 @@ The main editor widget that embeds Quill.js via an iframe.
 | `editorHtmlPath` | `String?` | `'quill_editor.html'` | Custom editor HTML path |
 | `viewerHtmlPath` | `String?` | `'quill_viewer.html'` | Custom viewer HTML path |
 
-#### State Methods
+> **Note:** If no `controller` is provided, an internal controller is created automatically (like `TextField`).
 
-Access via `GlobalKey<QuillEditorWidgetState>`:
 
-```dart
-final GlobalKey<QuillEditorWidgetState> _editorKey = GlobalKey();
 
-// Later...
-_editorKey.currentState?.methodName();
-```
 
 | Method | Description |
 |--------|-------------|
@@ -200,11 +294,15 @@ SaveStatusIndicator(status: SaveStatus.unsaved)
 Zoom in/out controls with percentage display.
 
 ```dart
-ZoomControls(
-  zoomLevel: _zoomLevel,
-  onZoomIn: () => _editorKey.currentState?.zoomIn(),
-  onZoomOut: () => _editorKey.currentState?.zoomOut(),
-  onReset: () => _editorKey.currentState?.resetZoom(),
+// With controller (reactive)
+ListenableBuilder(
+  listenable: _controller,
+  builder: (context, _) => ZoomControls(
+    zoomLevel: _controller.currentZoom,
+    onZoomIn: () => _controller.zoomIn(),
+    onZoomOut: () => _controller.zoomOut(),
+    onReset: () => _controller.resetZoom(),
+  ),
 )
 ```
 
@@ -260,12 +358,60 @@ Dialog for inserting raw HTML into the editor.
 ```dart
 final result = await InsertHtmlDialog.show(context);
 if (result != null) {
-  _editorKey.currentState?.insertHtml(
-    result.html,
-    replace: result.replaceContent,
-  );
+  if (result.replaceContent) {
+    _controller.setHTML(result.html);
+  } else {
+    _controller.insertHtml(result.html);
+  }
 }
 ```
+
+---
+
+## ⚡ Custom Actions
+
+Custom actions allow you to extend the editor with your own functionality.
+
+### Defining Actions
+
+```dart
+// Create a reusable action
+final timestampAction = QuillEditorAction(
+  name: 'insertTimestamp',
+  parameters: {'format': 'ISO'},
+  onExecute: () => print('Inserting timestamp...'),
+  onResponse: (response) => print('Done: $response'),
+);
+
+// Register with controller
+_controller.registerAction(timestampAction);
+```
+
+### Executing Actions
+
+```dart
+// Execute a registered action
+_controller.executeAction('insertTimestamp');
+
+// Override parameters at execution time
+_controller.executeAction('insertTimestamp', parameters: {
+  'format': 'readable',
+});
+
+// Execute one-off action without registration
+_controller.executeCustom(
+  actionName: 'insertSignature',
+  parameters: {'name': 'John Doe'},
+  onResponse: (response) => print('Signature inserted'),
+);
+```
+
+### Use Cases
+
+- Insert dynamic content (timestamps, user info, templates)
+- Trigger custom formatting or transformations
+- Integrate with external services
+- Add business-specific editor commands
 
 ---
 
@@ -487,6 +633,7 @@ lib/
     │       └── export_styles.dart     # Export CSS generation
     ├── widgets/
     │   ├── quill_editor_widget.dart   # Main editor widget
+    │   ├── quill_editor_controller.dart # Controller for programmatic access
     │   ├── save_status_indicator.dart # Save status display
     │   ├── zoom_controls.dart         # Zoom UI
     │   ├── output_preview.dart        # HTML/text preview
@@ -529,10 +676,15 @@ class EditorPage extends StatefulWidget {
 }
 
 class _EditorPageState extends State<EditorPage> {
-  final _editorKey = GlobalKey<QuillEditorWidgetState>();
+  final _controller = QuillEditorController();
   String _html = '';
-  double _zoom = 1.0;
   SaveStatus _status = SaveStatus.saved;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -542,31 +694,25 @@ class _EditorPageState extends State<EditorPage> {
         actions: [
           // Undo/Redo
           IconButton(
-            onPressed: () => _editorKey.currentState?.undo(),
+            onPressed: () => _controller.undo(),
             icon: Icon(Icons.undo),
             tooltip: 'Undo',
           ),
           IconButton(
-            onPressed: () => _editorKey.currentState?.redo(),
+            onPressed: () => _controller.redo(),
             icon: Icon(Icons.redo),
             tooltip: 'Redo',
           ),
           SizedBox(width: 8),
-          // Zoom
-          ZoomControls(
-            zoomLevel: _zoom,
-            onZoomIn: () {
-              _editorKey.currentState?.zoomIn();
-              setState(() => _zoom += 0.1);
-            },
-            onZoomOut: () {
-              _editorKey.currentState?.zoomOut();
-              setState(() => _zoom -= 0.1);
-            },
-            onReset: () {
-              _editorKey.currentState?.resetZoom();
-              setState(() => _zoom = 1.0);
-            },
+          // Zoom - uses controller's reactive zoom level
+          ListenableBuilder(
+            listenable: _controller,
+            builder: (context, _) => ZoomControls(
+              zoomLevel: _controller.currentZoom,
+              onZoomIn: () => _controller.zoomIn(),
+              onZoomOut: () => _controller.zoomOut(),
+              onReset: () => _controller.resetZoom(),
+            ),
           ),
           SaveStatusIndicator(status: _status),
           FilledButton.icon(
@@ -586,7 +732,7 @@ class _EditorPageState extends State<EditorPage> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: QuillEditorWidget(
-                  key: _editorKey,
+                  controller: _controller,
                   onContentChanged: (html, delta) {
                     setState(() {
                       _html = html;

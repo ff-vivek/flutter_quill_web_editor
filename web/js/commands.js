@@ -6,7 +6,10 @@
 
 import { ZOOM_MIN, ZOOM_MAX } from './config.js';
 import { preprocessHtml, extractBodyContent } from './utils.js';
-import { sendContentChange, sendContentsResponse, sendZoomChange } from './flutter-bridge.js';
+import { sendContentChange, sendContentsResponse, sendZoomChange, sendCustomActionResponse } from './flutter-bridge.js';
+
+// Registry for custom action handlers
+const customActionHandlers = new Map();
 
 /**
  * Store image dimensions and alignment from HTML before conversion
@@ -161,6 +164,11 @@ export function handleCommand(data, editor, Quill) {
         if (selection) {
           editor.insertText(selection.index, data.text, Quill.sources.USER);
           editor.setSelection(selection.index + data.text.length);
+        } else {
+          // No selection, insert at the end
+          const length = editor.getLength();
+          editor.insertText(length - 1, data.text, Quill.sources.USER);
+          editor.setSelection(length - 1 + data.text.length, Quill.sources.USER);
         }
       }
       break;
@@ -316,7 +324,72 @@ export function handleCommand(data, editor, Quill) {
         sendZoomChange(zoomLevel);
       }
       break;
+
+    case 'customAction':
+      // Handle user-defined custom actions
+      if (data.customActionName) {
+        const actionName = data.customActionName;
+        console.log('Executing custom action:', actionName, data);
+        
+        // Check if there's a registered handler for this action
+        const handler = customActionHandlers.get(actionName);
+        if (handler) {
+          try {
+            const result = handler(data, editor, Quill);
+            // Send response back to Flutter
+            sendCustomActionResponse(actionName, {
+              success: true,
+              result: result
+            });
+          } catch (error) {
+            console.error('Custom action error:', error);
+            sendCustomActionResponse(actionName, {
+              success: false,
+              error: error.message
+            });
+          }
+        } else {
+          // No handler registered, just acknowledge the action
+          // This allows Flutter to handle actions without JS involvement
+          sendCustomActionResponse(actionName, {
+            success: true,
+            handled: false,
+            message: 'No JavaScript handler registered for this action'
+          });
+        }
+        
+        // Always notify content change in case the action modified content
+        sendContentChange(editor);
+      }
+      break;
   }
+}
+
+/**
+ * Register a custom action handler
+ * @param {string} actionName - Name of the action to handle
+ * @param {Function} handler - Handler function (data, editor, Quill) => result
+ */
+export function registerCustomAction(actionName, handler) {
+  customActionHandlers.set(actionName, handler);
+  console.log('Registered custom action handler:', actionName);
+}
+
+/**
+ * Unregister a custom action handler
+ * @param {string} actionName - Name of the action to unregister
+ */
+export function unregisterCustomAction(actionName) {
+  customActionHandlers.delete(actionName);
+  console.log('Unregistered custom action handler:', actionName);
+}
+
+/**
+ * Get all registered custom action names
+ * @returns {Array} List of registered action names
+ */
+export function getRegisteredCustomActions() {
+  return Array.from(customActionHandlers.keys());
 }
 
 /**

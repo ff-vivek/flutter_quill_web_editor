@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-12-23
+
+### Added
+- **QuillEditorController** - New controller-based state management for the editor
+  - Similar to `TextEditingController`, eliminates need for `GlobalKey`
+  - Provides reactive updates via `ChangeNotifier`
+  - Properties: `isReady`, `html`, `currentZoom`, `registeredActionNames`
+- **Controllerless mode** - Widget works without a controller (like `TextField`)
+  - Internal controller created automatically when not provided
+  - Just use callbacks for simple use cases
+  - Provide your own controller only when you need programmatic access
+- **Custom Actions API** - Register and execute user-defined actions
+  - `QuillEditorAction` class for defining reusable actions
+  - `registerAction()` / `registerActions()` for registering actions
+  - `executeAction()` for executing registered actions with parameter merging
+  - `executeCustom()` for one-off actions without registration
+  - Action callbacks: `onExecute`, `onResponse`
+  - JavaScript-side custom action handler support
+- **Command Queue** - Proper FIFO queue for commands when editor not ready
+  - Commands queued in order, processed when editor becomes ready
+  - Maximum queue size (100) prevents memory issues
+  - Proper cleanup on widget disposal
+- **New Example Pages**
+  - Dropdown Insert example - demonstrates inserting values from Flutter dropdowns
+  - Custom Actions example - demonstrates registering and executing custom actions
+- **45 new unit tests** for `QuillEditorController` and `QuillEditorAction`
+
+### Changed
+- Updated home page to show all three example options
+- Example pages now use `QuillEditorController` instead of `GlobalKey`
+
 ## [1.0.2] - 2025-12-19
 
 ### Fixed

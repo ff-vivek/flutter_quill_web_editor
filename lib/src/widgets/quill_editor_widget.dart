@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 // ignore: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:html' as html;
@@ -7,24 +8,75 @@ import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
 
 import '../core/constants/editor_config.dart';
+import 'quill_editor_controller.dart';
 
 /// A Quill.js rich text editor widget for Flutter Web.
 ///
 /// This widget embeds a Quill.js editor via an iframe and provides
 /// bidirectional communication between Flutter and the JavaScript editor.
 ///
-/// Example usage:
+/// ## Simple Usage (No Controller)
+/// When you don't need programmatic access, just use the callbacks:
 /// ```dart
 /// QuillEditorWidget(
 ///   onContentChanged: (html, delta) {
 ///     print('Content changed: $html');
 ///   },
-///   initialHtml: '<p>Hello World</p>',
 /// )
+/// ```
+///
+/// ## Using with Controller
+/// When you need programmatic control, provide your own controller.
+/// You are responsible for disposing it:
+/// ```dart
+/// class MyWidget extends StatefulWidget {
+///   @override
+///   State<MyWidget> createState() => _MyWidgetState();
+/// }
+///
+/// class _MyWidgetState extends State<MyWidget> {
+///   final _controller = QuillEditorController();
+///
+///   @override
+///   void dispose() {
+///     _controller.dispose();  // You manage the lifecycle
+///     super.dispose();
+///   }
+///
+///   void _insertText() {
+///     _controller.insertText('Hello World!');
+///   }
+///
+///   @override
+///   Widget build(BuildContext context) {
+///     return QuillEditorWidget(
+///       controller: _controller,
+///       onContentChanged: (html, delta) {
+///         print('Content changed: $html');
+///       },
+///     );
+///   }
+/// }
+/// ```
+///
+/// ## Using with GlobalKey (Legacy)
+/// ```dart
+/// final GlobalKey<QuillEditorWidgetState> _editorKey = GlobalKey();
+///
+/// QuillEditorWidget(
+///   key: _editorKey,
+///   onContentChanged: (html, delta) {
+///     print('Content changed: $html');
+///   },
+/// )
+///
+/// // Access methods via key
+/// _editorKey.currentState?.insertText('Hello');
 /// ```
 class QuillEditorWidget extends StatefulWidget {
   const QuillEditorWidget({
     super.key,
+    this.controller,
     this.width,
     this.height,
     this.onContentChanged,
@@ -36,6 +88,30 @@ class QuillEditorWidget extends StatefulWidget {
     this.editorHtmlPath,
     this.viewerHtmlPath,
   });
+
+  /// Controller for programmatic access to the editor.
+  ///
+  /// If not provided, an internal controller is created and managed
+  /// automatically by the widget (similar to how `TextField` works).
+  ///
+  /// When you provide a controller, you are responsible for disposing it:
+  /// ```dart
+  /// class _MyWidgetState extends State<MyWidget> {
+  ///   final _controller = QuillEditorController();
+  ///
+  ///   @override
+  ///   void dispose() {
+  ///     _controller.dispose();
+  ///     super.dispose();
+  ///   }
+  ///
+  ///   @override
+  ///   Widget build(BuildContext context) {
+  ///     return QuillEditorWidget(controller: _controller);
+  ///   }
+  /// }
+  /// ```
+  final QuillEditorController? controller;
 
   /// Width of the editor. If null, expands to fill parent.
   final double? width;
@@ -76,13 +152,33 @@ class QuillEditorWidget extends StatefulWidget {
 /// State for [QuillEditorWidget].
 ///
 /// Provides methods for programmatic control of the editor.
+/// Prefer using [QuillEditorController] for a cleaner API.
 class QuillEditorWidgetState extends State<QuillEditorWidget> {
   html.IFrameElement? _iframe;
   static int _viewIdCounter = 0;
   late int _viewId;
   bool _hasInitializedContent = false;
   bool _isReady = false;
+  bool _isProcessingQueue = false;
+  bool _isDisposed = false;
   double _currentZoom = EditorConfig.defaultZoom;
+
+  /// Internal controller created when no external controller is provided.
+  /// This follows the same pattern as TextField's internal TextEditingController.
+  QuillEditorController? _internalController;
+
+  /// Returns the effective controller (external or internal).
+  /// Creates an internal controller lazily if needed.
+  QuillEditorController get _effectiveController =>
+      widget.controller ?? (_internalController ??= QuillEditorController());
+
+  /// Command queue for storing commands when editor is not ready.
+  /// Uses a Queue (FIFO) to maintain command order.
+  final Queue<Map<String, dynamic>> _commandQueue =
+      Queue<Map<String, dynamic>>();
+
+  /// Maximum number of commands to queue before dropping old ones.
+  static const int _maxQueueSize = 100;
 
   /// Current zoom level (1.0 = 100%).
   double get currentZoom => _currentZoom;
@@ -90,11 +186,41 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
   /// Whether the editor is ready to receive commands.
   bool get isReady => _isReady;
 
+  /// Number of commands currently queued.
+  int get queuedCommandCount => _commandQueue.length;
+
   @override
   void initState() {
     super.initState();
     _viewId = ++_viewIdCounter;
     _registerViewFactory();
+    _attachController();
+  }
+
+  @override
+  void didUpdateWidget(QuillEditorWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      // Detach old controller
+      if (oldWidget.controller != null) {
+        oldWidget.controller!.detach();
+      } else {
+        // Old widget used internal controller, detach it
+        _internalController?.detach();
+      }
+
+      // If switching from internal to external controller, dispose internal
+      if (oldWidget.controller == null && widget.controller != null) {
+        _internalController?.dispose();
+        _internalController = null;
+      }
+
+      _attachController();
+    }
+  }
+
+  void _attachController() {
+    _effectiveController.attach(_sendCommand);
   }
 
   void _registerViewFactory() {
@@ -114,8 +240,11 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
 
         _iframe!.onLoad.listen((_) {
           _isReady = true;
+          _effectiveController.markReady();
           _initializeContent();
           widget.onReady?.call();
+          // Process any commands that were queued before editor was ready
+          _processCommandQueue();
         });
 
         html.window.addEventListener('message', _handleMessage);
@@ -126,6 +255,9 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
   }
 
   void _handleMessage(html.Event event) {
+    // Ignore messages if widget has been disposed
+    if (_isDisposed) return;
+
     final messageEvent = event as html.MessageEvent;
     if (messageEvent.data == null) return;
 
@@ -136,17 +268,32 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
 
       final data = jsonDecode(messageData);
 
+      // Double-check disposal state after async operations
+      if (_isDisposed) return;
+
       if (data['type'] == 'contentChange') {
-        widget.onContentChanged?.call(
-          (data['html'] as String?) ?? '',
-          data['delta'],
-        );
+        final htmlContent = (data['html'] as String?) ?? '';
+        _effectiveController.updateHtml(htmlContent);
+        widget.onContentChanged?.call(htmlContent, data['delta']);
       } else if (data['type'] == 'ready') {
         _isReady = true;
+        _effectiveController.markReady();
         widget.onReady?.call();
+        // Process any commands that were queued before editor was ready
+        _processCommandQueue();
+      } else if (data['type'] == 'customActionResponse') {
+        // Handle custom action responses
+        final actionName = data['actionName'] as String?;
+        if (actionName != null) {
+          final response = data['response'] as Map<String, dynamic>?;
+          _effectiveController.handleActionResponse(actionName, response);
+        }
       }
     } catch (e) {
-      debugPrint('QuillEditorWidget: Message parse error: $e');
+      // Only log errors if not disposed (disposed errors are expected)
+      if (!_isDisposed) {
+        debugPrint('QuillEditorWidget: Message parse error: $e');
+      }
     }
   }
 
@@ -301,12 +448,60 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
     });
   }
 
+  /// Queues a command if the editor is not ready, or sends it immediately.
   void _sendCommand(Map<String, dynamic> data) {
     if (!_isReady || _iframe == null) {
-      debugPrint('QuillEditorWidget: Not ready yet, queuing command');
-      Future.delayed(const Duration(milliseconds: 200), () {
-        _sendCommand(data);
-      });
+      _enqueueCommand(data);
+      return;
+    }
+
+    _dispatchCommand(data);
+  }
+
+  /// Adds a command to the queue.
+  void _enqueueCommand(Map<String, dynamic> data) {
+    // Prevent queue from growing indefinitely
+    if (_commandQueue.length >= _maxQueueSize) {
+      final dropped = _commandQueue.removeFirst();
+      debugPrint(
+        'QuillEditorWidget: Queue full, dropping oldest command: ${dropped['action']}',
+      );
+    }
+
+    _commandQueue.addLast(Map<String, dynamic>.from(data));
+    debugPrint(
+      'QuillEditorWidget: Command queued: ${data['action']} '
+      '(queue size: ${_commandQueue.length})',
+    );
+  }
+
+  /// Processes all queued commands in FIFO order.
+  void _processCommandQueue() {
+    if (_isDisposed) return;
+    if (_isProcessingQueue || _commandQueue.isEmpty) return;
+    if (!_isReady || _iframe == null) return;
+
+    _isProcessingQueue = true;
+    debugPrint(
+      'QuillEditorWidget: Processing ${_commandQueue.length} queued commands',
+    );
+
+    // Process all queued commands
+    while (_commandQueue.isNotEmpty &&
+        _isReady &&
+        _iframe != null &&
+        !_isDisposed) {
+      final command = _commandQueue.removeFirst();
+      _dispatchCommand(command);
+    }
+
+    _isProcessingQueue = false;
+  }
+
+  /// Dispatches a command to the iframe.
+  void _dispatchCommand(Map<String, dynamic> data) {
+    if (_iframe?.contentWindow == null) {
+      debugPrint('QuillEditorWidget: Cannot dispatch - iframe not available');
       return;
     }
 
@@ -314,12 +509,34 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
     data['type'] = 'command';
     final jsonString = jsonEncode(data);
     debugPrint('QuillEditorWidget: Sending command: ${data['action']}');
-    _iframe?.contentWindow?.postMessage(jsonString, '*');
+    _iframe!.contentWindow!.postMessage(jsonString, '*');
   }
 
   @override
   void dispose() {
+    // Mark as disposed first to prevent message handler from using controller
+    _isDisposed = true;
+
+    // Clear any pending commands
+    if (_commandQueue.isNotEmpty) {
+      debugPrint(
+        'QuillEditorWidget: Disposing with ${_commandQueue.length} queued commands',
+      );
+      _commandQueue.clear();
+    }
+
+    // Remove message listener before detaching controller
     html.window.removeEventListener('message', _handleMessage);
+
+    // Dispose internal controller (we own it) or detach external controller
+    if (_internalController != null) {
+      _internalController!.dispose();
+      _internalController = null;
+    } else {
+      // External controller: just detach, owner is responsible for disposing
+      widget.controller?.detach();
+    }
+
     super.dispose();
   }
 

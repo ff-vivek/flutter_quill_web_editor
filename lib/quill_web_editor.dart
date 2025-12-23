@@ -11,24 +11,48 @@
 /// - Preview functionality
 /// - Zoom controls
 ///
-/// ## Getting Started
+/// ## Getting Started (Using Controller - Recommended)
 ///
 /// ```dart
 /// import 'package:quill_web_editor/quill_web_editor.dart';
 ///
-/// QuillEditorWidget(
-///   onContentChanged: (html, delta) {
-///     print('Content: $html');
-///   },
-///   initialHtml: '<p>Hello World!</p>',
-/// )
+/// class MyEditor extends StatefulWidget {
+///   @override
+///   State<MyEditor> createState() => _MyEditorState();
+/// }
+///
+/// class _MyEditorState extends State<MyEditor> {
+///   final _controller = QuillEditorController();
+///
+///   @override
+///   void dispose() {
+///     _controller.dispose();
+///     super.dispose();
+///   }
+///
+///   void _insertText() {
+///     _controller.insertText('Hello World!');
+///   }
+///
+///   @override
+///   Widget build(BuildContext context) {
+///     return QuillEditorWidget(
+///       controller: _controller,
+///       onContentChanged: (html, delta) {
+///         print('Content: $html');
+///       },
+///       initialHtml: '<p>Hello World!</p>',
+///     );
+///   }
+/// }
 /// ```
 ///
 /// ## Features
 ///
 /// ### Core Components
+/// - [QuillEditorController] - Controller for programmatic editor access
 /// - [QuillEditorWidget] - Main editor widget
-/// - [QuillEditorWidgetState] - Editor state with programmatic control
+/// - [QuillEditorWidgetState] - Editor state (legacy GlobalKey access)
 ///
 /// ### UI Components
 /// - [SaveStatusIndicator] - Shows save status (saved/saving/unsaved)
@@ -71,6 +95,7 @@ export 'src/widgets/html_preview_dialog.dart';
 export 'src/widgets/insert_html_dialog.dart';
 export 'src/widgets/output_preview.dart';
 // Widgets
+export 'src/widgets/quill_editor_controller.dart';
 export 'src/widgets/quill_editor_widget.dart';
 export 'src/widgets/save_status_indicator.dart';
 export 'src/widgets/stat_card.dart';

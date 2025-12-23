@@ -42,6 +42,20 @@
 
 ### 🔧 Programmatic Control
 
+#### Using QuillEditorController (Recommended)
+
+| Action | Method | Example |
+|--------|--------|--------|
+| Insert text | `insertText(String)` | `_controller.insertText('Hello')` |
+| Set HTML | `setHTML(String)` | `_controller.setHTML('<h1>Title</h1>')` |
+| Format text | `format(String, dynamic)` | `_controller.format('bold', true)` |
+| Insert table | `insertTable(int, int)` | `_controller.insertTable(3, 3)` |
+| Undo/Redo | `undo()` / `redo()` | `_controller.undo()` |
+| Zoom | `zoomIn()` / `zoomOut()` | `_controller.zoomIn()` |
+| Custom Action | `executeAction(String)` | `_controller.executeAction('myAction')` |
+
+#### Using GlobalKey (Legacy)
+
 | Action | Method | Example |
 |--------|--------|--------|
 | Insert text | `insertText(String)` | `_editorKey.currentState?.insertText('Hello')` |
@@ -69,31 +83,57 @@
 | `commands.js` | Command handlers (Flutter → JS) | `web/js/commands.js` |
 | `quill-setup.js` | Quill initialization | `web/js/quill-setup.js` |
 | `quill_editor_widget.dart` | Main Flutter widget | `lib/src/widgets/quill_editor_widget.dart` |
+| `quill_editor_controller.dart` | Controller for editor | `lib/src/widgets/quill_editor_controller.dart` |
 | `editor_config.dart` | Editor constants | `lib/src/core/constants/editor_config.dart` |
 
 ### ⚡ Quick Code Snippets
 
-**Basic Editor Setup**:
+**Simple Editor (No Controller)**:
 ```dart
 QuillEditorWidget(
-  key: _editorKey,
   onContentChanged: (html, delta) => setState(() => _currentHtml = html),
   initialHtml: '<p>Start typing...</p>',
 )
 ```
 
+**Editor with Controller (Recommended)**:
+```dart
+final _controller = QuillEditorController();
+
+// In dispose():
+_controller.dispose();
+
+// Widget:
+QuillEditorWidget(
+  controller: _controller,
+  onContentChanged: (html, delta) => setState(() => _currentHtml = html),
+)
+```
+
 **Format Text**:
 ```dart
-_editorKey.currentState?.format('bold', true);
-_editorKey.currentState?.format('color', '#ff0000');
-_editorKey.currentState?.format('list', 'bullet');
+_controller.format('bold', true);
+_controller.format('color', '#ff0000');
+_controller.format('list', 'bullet');
 ```
 
 **Insert Content**:
 ```dart
-_editorKey.currentState?.insertText('Hello World');
-_editorKey.currentState?.insertTable(3, 3);
-_editorKey.currentState?.insertHtml('<h1>Title</h1>');
+_controller.insertText('Hello World');
+_controller.insertTable(3, 3);
+_controller.insertHtml('<h1>Title</h1>');
+```
+
+**Custom Actions**:
+```dart
+// Register action
+_controller.registerAction(QuillEditorAction(
+  name: 'insertTimestamp',
+  onExecute: () => print('Inserting...'),
+));
+
+// Execute action
+_controller.executeAction('insertTimestamp');
 ```
 
 ---
@@ -108,6 +148,8 @@ _editorKey.currentState?.insertHtml('<h1>Title</h1>');
 
 | Category | Features |
 |----------|----------|
+| **Controller API** | `QuillEditorController` for programmatic control (like `TextEditingController`) |
+| **Custom Actions** | Register and execute user-defined actions with callbacks |
 | **Text Formatting** | Bold, Italic, Underline, Strikethrough, Subscript, Superscript |
 | **Structure** | Headers (H1-H6), Paragraphs, Blockquotes, Code Blocks |
 | **Lists** | Ordered Lists, Bullet Lists, Checklists |
@@ -331,15 +373,15 @@ flutter build web --release
 
 This section provides practical examples to get you started quickly with the Quill Web Editor.
 
-### Minimal Example
+### Simple Example (No Controller)
+
+When you just need basic editing with callbacks:
 
 ```dart
 import 'package:flutter/material.dart';
 import 'package:quill_web_editor/quill_web_editor.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -347,7 +389,37 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: AppTheme.lightTheme, // Use built-in theme
+      theme: AppTheme.lightTheme,
+      home: Scaffold(
+        body: QuillEditorWidget(
+          onContentChanged: (html, delta) {
+            print('Content: $html');
+          },
+          initialHtml: '<p>Start typing...</p>',
+        ),
+      ),
+    );
+  }
+}
+```
+
+### With Controller (Recommended)
+
+When you need programmatic control:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:quill_web_editor/quill_web_editor.dart';
+
+void main() => runApp(const MyApp());
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: AppTheme.lightTheme,
       home: const EditorPage(),
     );
   }
@@ -361,17 +433,34 @@ class EditorPage extends StatefulWidget {
 }
 
 class _EditorPageState extends State<EditorPage> {
-  // Key for accessing editor methods
-  final GlobalKey<QuillEditorWidgetState> _editorKey = GlobalKey();
-  
+  // Controller for programmatic access
+  final _controller = QuillEditorController();
   String _currentHtml = '';
+
+  @override
+  void dispose() {
+    _controller.dispose();  // Always dispose the controller
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Editor')),
+      appBar: AppBar(
+        title: const Text('My Editor'),
+        actions: [
+          IconButton(
+            onPressed: () => _controller.undo(),
+            icon: const Icon(Icons.undo),
+          ),
+          IconButton(
+            onPressed: () => _controller.redo(),
+            icon: const Icon(Icons.redo),
+          ),
+        ],
+      ),
       body: QuillEditorWidget(
-        key: _editorKey,
+        controller: _controller,
         onContentChanged: (html, delta) {
           setState(() => _currentHtml = html);
           print('Content updated: ${html.length} characters');
@@ -397,32 +486,40 @@ QuillEditorWidget(
 
 ### Programmatic Control
 
+#### Using Controller (Recommended)
+
 ```dart
 class _EditorPageState extends State<EditorPage> {
-  final GlobalKey<QuillEditorWidgetState> _editorKey = GlobalKey();
+  final _controller = QuillEditorController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   void _insertText() {
-    _editorKey.currentState?.insertText('Hello, World!');
+    _controller.insertText('Hello, World!');
   }
 
   void _setContent() {
-    _editorKey.currentState?.setHTML('<h1>New Content</h1>');
+    _controller.setHTML('<h1>New Content</h1>');
   }
 
   void _clearContent() {
-    _editorKey.currentState?.clear();
+    _controller.clear();
   }
 
   void _undoLastAction() {
-    _editorKey.currentState?.undo();
+    _controller.undo();
   }
 
   void _redoLastAction() {
-    _editorKey.currentState?.redo();
+    _controller.redo();
   }
 
   void _insertTable() {
-    _editorKey.currentState?.insertTable(3, 3); // 3 rows x 3 columns
+    _controller.insertTable(3, 3); // 3 rows x 3 columns
   }
 
   @override
@@ -436,6 +533,28 @@ class _EditorPageState extends State<EditorPage> {
           IconButton(onPressed: _clearContent, icon: Icon(Icons.delete)),
         ],
       ),
+      body: QuillEditorWidget(
+        controller: _controller,
+        onContentChanged: (html, delta) => print('Changed'),
+      ),
+    );
+  }
+}
+```
+
+#### Using GlobalKey (Legacy)
+
+```dart
+class _EditorPageState extends State<EditorPage> {
+  final GlobalKey<QuillEditorWidgetState> _editorKey = GlobalKey();
+
+  void _insertText() {
+    _editorKey.currentState?.insertText('Hello, World!');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
       body: QuillEditorWidget(
         key: _editorKey,
         onContentChanged: (html, delta) => print('Changed'),
@@ -763,14 +882,15 @@ quill_web_editor/
 │       │       ├── text_stats.dart     # Document statistics
 │       │       └── export_styles.dart  # Export CSS generation
 │       ├── widgets/
-│       │   ├── quill_editor_widget.dart   # Main editor widget
-│       │   ├── save_status_indicator.dart # Save status
-│       │   ├── zoom_controls.dart         # Zoom UI
-│       │   ├── output_preview.dart        # Preview tabs
-│       │   ├── stat_card.dart             # Statistics cards
-│       │   ├── app_card.dart              # Styled container
-│       │   ├── html_preview_dialog.dart   # Preview dialog
-│       │   └── insert_html_dialog.dart    # HTML insertion
+│       │   ├── quill_editor_widget.dart     # Main editor widget
+│       │   ├── quill_editor_controller.dart # Controller for programmatic access
+│       │   ├── save_status_indicator.dart   # Save status
+│       │   ├── zoom_controls.dart           # Zoom UI
+│       │   ├── output_preview.dart          # Preview tabs
+│       │   ├── stat_card.dart               # Statistics cards
+│       │   ├── app_card.dart                # Styled container
+│       │   ├── html_preview_dialog.dart     # Preview dialog
+│       │   └── insert_html_dialog.dart      # HTML insertion
 │       └── services/
 │           └── document_service.dart      # Document operations
 ├── web/
@@ -1531,7 +1651,105 @@ Removes all formatting from selected text, returning it to default style.
 
 ## 6. API Reference
 
-### 6.1 QuillEditorWidget
+### 6.1 QuillEditorController
+
+A controller for programmatic access to the editor, similar to `TextEditingController`. This is the recommended approach for controlling the editor.
+
+#### Creating a Controller
+
+```dart
+class _MyWidgetState extends State<MyWidget> {
+  final _controller = QuillEditorController();
+
+  @override
+  void dispose() {
+    _controller.dispose();  // Always dispose!
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return QuillEditorWidget(controller: _controller);
+  }
+}
+```
+
+#### Controller Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `isReady` | `bool` | Whether editor is ready for commands |
+| `html` | `String` | Current HTML content |
+| `currentZoom` | `double` | Current zoom level (1.0 = 100%) |
+| `registeredActionNames` | `Set<String>` | Names of registered custom actions |
+
+#### Controller Methods
+
+| Method | Description |
+|--------|-------------|
+| `insertText(String text)` | Insert plain text at cursor |
+| `setHTML(String html, {bool replace})` | Set editor content from HTML |
+| `insertHtml(String html)` | Insert HTML at cursor position |
+| `setContents(dynamic delta)` | Set content from Quill Delta |
+| `getContents()` | Request current content |
+| `clear()` | Clear all editor content |
+| `focus()` | Focus the editor |
+| `undo()` | Undo the last operation |
+| `redo()` | Redo the last undone operation |
+| `format(String format, dynamic value)` | Apply formatting to selection |
+| `insertTable(int rows, int cols)` | Insert a table at cursor |
+| `zoomIn()` | Increase zoom by 10% |
+| `zoomOut()` | Decrease zoom by 10% |
+| `resetZoom()` | Reset zoom to 100% |
+| `setZoom(double level)` | Set specific zoom level (0.5 - 3.0) |
+
+#### Custom Actions
+
+The controller supports registering and executing custom actions:
+
+```dart
+// Define a reusable action
+final timestampAction = QuillEditorAction(
+  name: 'insertTimestamp',
+  parameters: {'format': 'ISO'},
+  onExecute: () => print('Inserting timestamp...'),
+  onResponse: (response) => print('Result: $response'),
+);
+
+// Register the action
+_controller.registerAction(timestampAction);
+
+// Execute the action
+_controller.executeAction('insertTimestamp');
+
+// Execute with parameter overrides
+_controller.executeAction('insertTimestamp', parameters: {
+  'format': 'readable',
+});
+
+// Execute one-off action (without registration)
+_controller.executeCustom(
+  actionName: 'insertSignature',
+  parameters: {'name': 'John Doe'},
+  onResponse: (response) => print('Done'),
+);
+
+// Unregister action
+_controller.unregisterAction('insertTimestamp');
+```
+
+#### QuillEditorAction Class
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `name` | `String` | Unique action name (required) |
+| `parameters` | `Map<String, dynamic>?` | Default parameters |
+| `onExecute` | `VoidCallback?` | Called when action is executed |
+| `onResponse` | `Function(Map<String, dynamic>?)?` | Called when response received |
+
+---
+
+### 6.2 QuillEditorWidget
 
 The main editor widget that embeds Quill.js via an iframe.
 
@@ -1539,7 +1757,7 @@ The main editor widget that embeds Quill.js via an iframe.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `key` | `GlobalKey<QuillEditorWidgetState>` | - | Key for accessing editor state |
+| `controller` | `QuillEditorController?` | `null` | Controller for programmatic access |
 | `width` | `double?` | `null` | Editor width (expands to fill if null) |
 | `height` | `double?` | `null` | Editor height (expands to fill if null) |
 | `onContentChanged` | `Function(String html, dynamic delta)?` | `null` | Callback when content changes |
@@ -1551,7 +1769,9 @@ The main editor widget that embeds Quill.js via an iframe.
 | `editorHtmlPath` | `String?` | `'quill_editor.html'` | Custom editor HTML path |
 | `viewerHtmlPath` | `String?` | `'quill_viewer.html'` | Custom viewer HTML path |
 
-#### State Methods
+> **Note:** If no controller is provided, an internal controller is created automatically (like `TextField`).
+
+#### State Methods (Legacy)
 
 Access via `GlobalKey<QuillEditorWidgetState>`:
 
@@ -1587,7 +1807,7 @@ _editorKey.currentState?.methodName();
 
 ---
 
-### 6.2 DocumentService
+### 6.3 DocumentService
 
 Utility service for document operations.
 
@@ -1656,7 +1876,7 @@ DocumentService.removeFromLocalStorage('my-draft');
 
 ---
 
-### 6.3 HtmlCleaner
+### 6.4 HtmlCleaner
 
 Process HTML for export.
 
@@ -1678,7 +1898,7 @@ final hex = HtmlCleaner.normalizeColor('rgb(255, 0, 0)'); // '#ff0000'
 
 ---
 
-### 6.4 TextStats
+### 6.5 TextStats
 
 Calculate document statistics.
 
@@ -1695,7 +1915,7 @@ print('Reading time: ${stats.readingTimeMinutes} min');
 
 ---
 
-### 6.5 UI Components
+### 6.6 UI Components
 
 #### SaveStatusIndicator
 
@@ -1708,11 +1928,15 @@ SaveStatusIndicator(status: SaveStatus.unsaved)
 #### ZoomControls
 
 ```dart
-ZoomControls(
-  zoomLevel: 1.0,
-  onZoomIn: () => _editorKey.currentState?.zoomIn(),
-  onZoomOut: () => _editorKey.currentState?.zoomOut(),
-  onReset: () => _editorKey.currentState?.resetZoom(),
+// With controller (reactive)
+ListenableBuilder(
+  listenable: _controller,
+  builder: (context, _) => ZoomControls(
+    zoomLevel: _controller.currentZoom,
+    onZoomIn: () => _controller.zoomIn(),
+    onZoomOut: () => _controller.zoomOut(),
+    onReset: () => _controller.resetZoom(),
+  ),
 )
 ```
 
@@ -1753,16 +1977,17 @@ HtmlPreviewDialog.show(context, htmlContent);
 ```dart
 final result = await InsertHtmlDialog.show(context);
 if (result != null) {
-  _editorKey.currentState?.insertHtml(
-    result.html,
-    replace: result.replaceContent,
-  );
+  if (result.replaceContent) {
+    _controller.setHTML(result.html);
+  } else {
+    _controller.insertHtml(result.html);
+  }
 }
 ```
 
 ---
 
-### 6.6 Constants & Configuration
+### 6.7 Constants & Configuration
 
 #### EditorConfig
 
@@ -2775,6 +3000,7 @@ export const TOOLBAR_OPTIONS = {
 | `format` | `format`, `value` | Apply formatting |
 | `insertTable` | `rows`, `cols` | Insert table |
 | `setZoom` | `zoom` | Set zoom level |
+| `customAction` | `actionName`, `parameters`, `callbackId` | Execute custom action |
 
 ### Events (JavaScript → Flutter)
 
@@ -2784,6 +3010,7 @@ export const TOOLBAR_OPTIONS = {
 | `contentChange` | `html`, `delta`, `text` | Content updated |
 | `response` | `action`, `html`, `delta`, `text` | Response to command |
 | `zoomChange` | `zoom` | Zoom level changed |
+| `customActionResponse` | `actionName`, `response`, `callbackId` | Response from custom action |
 
 ---
 
@@ -2822,6 +3049,7 @@ export const TOOLBAR_OPTIONS = {
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.0 | Dec 2024 | QuillEditorController, Custom Actions API, Command Queue, Controllerless mode |
 | 1.0.1 | Dec 2024 | Bug fixes, documentation updates |
 | 1.0.0 | Dec 2024 | Initial release |
 

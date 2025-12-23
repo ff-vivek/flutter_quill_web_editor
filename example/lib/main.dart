@@ -56,7 +56,7 @@ class ExampleHomePage extends StatelessWidget {
                     color: AppColors.accent.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.edit_document,
                     size: 64,
                     color: AppColors.accent,

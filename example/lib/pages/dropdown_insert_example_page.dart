@@ -277,7 +277,7 @@ class _DropdownInsertExamplePageState extends State<DropdownInsertExamplePage> {
       children: [
         Row(
           children: [
-            Icon(Icons.arrow_drop_down_circle_outlined,
+            const Icon(Icons.arrow_drop_down_circle_outlined,
                 color: AppColors.accent, size: 28),
             const SizedBox(width: 12),
             Text(
@@ -372,7 +372,7 @@ class _DropdownInsertExamplePageState extends State<DropdownInsertExamplePage> {
                   ),
                   child: Text(
                     entry.value,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
                       fontFamily: 'monospace',
                       color: AppColors.accent,
@@ -418,12 +418,12 @@ class _DropdownInsertExamplePageState extends State<DropdownInsertExamplePage> {
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, size: 16, color: AppColors.accent),
+          const Icon(Icons.info_outline, size: 16, color: AppColors.accent),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: TextStyle(fontSize: 12, color: AppColors.accent),
+              style: const TextStyle(fontSize: 12, color: AppColors.accent),
             ),
           ),
         ],

@@ -276,9 +276,7 @@ class QuillEditorController extends ChangeNotifier {
 
   /// Attaches this controller to a widget's command sender.
   /// This is called internally by [QuillEditorWidget].
-  void attach(SendCommandCallback sendCommand) {
-    _sendCommand = sendCommand;
-  }
+  void attach(SendCommandCallback sendCommand) => _sendCommand = sendCommand;
 
   /// Detaches this controller from the widget.
   /// This is called internally by [QuillEditorWidget].

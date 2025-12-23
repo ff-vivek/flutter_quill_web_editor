@@ -97,7 +97,8 @@ class _CustomActionsExamplePageState extends State<CustomActionsExamplePage> {
         name: 'insertWarningBox',
         parameters: {'type': 'warning', 'icon': '⚠️'},
         onExecute: () => debugPrint('Executing: insertWarningBox'),
-        onResponse: (response) => _handleActionResponse('Warning Box', response),
+        onResponse: (response) =>
+            _handleActionResponse('Warning Box', response),
       ),
     );
 
@@ -117,7 +118,8 @@ class _CustomActionsExamplePageState extends State<CustomActionsExamplePage> {
         name: 'insertSuccessBox',
         parameters: {'type': 'success', 'icon': '✅'},
         onExecute: () => debugPrint('Executing: insertSuccessBox'),
-        onResponse: (response) => _handleActionResponse('Success Box', response),
+        onResponse: (response) =>
+            _handleActionResponse('Success Box', response),
       ),
     );
 
@@ -142,10 +144,12 @@ class _CustomActionsExamplePageState extends State<CustomActionsExamplePage> {
     );
   }
 
-  void _handleActionResponse(String actionLabel, Map<String, dynamic>? response) {
+  void _handleActionResponse(
+      String actionLabel, Map<String, dynamic>? response) {
     setState(() {
       _executionCount++;
-      _lastActionResult = '$actionLabel executed successfully (#$_executionCount)';
+      _lastActionResult =
+          '$actionLabel executed successfully (#$_executionCount)';
     });
   }
 
@@ -193,7 +197,8 @@ class _CustomActionsExamplePageState extends State<CustomActionsExamplePage> {
     if (success) {
       // Also perform the actual content insertion
       _performActionContent(_selectedAction!);
-      _showSnackBar('Action executed: ${_actionDefinitions[_selectedAction]?.label}');
+      _showSnackBar(
+          'Action executed: ${_actionDefinitions[_selectedAction]?.label}');
     }
   }
 
@@ -347,7 +352,9 @@ class _CustomActionsExamplePageState extends State<CustomActionsExamplePage> {
                       label: 'Execute Action',
                       icon: Icons.play_arrow,
                       color: Colors.teal,
-                      onPressed: _editorController.isReady ? _executeSelectedAction : null,
+                      onPressed: _editorController.isReady
+                          ? _executeSelectedAction
+                          : null,
                     ),
 
                     const SizedBox(height: 28),
@@ -357,14 +364,17 @@ class _CustomActionsExamplePageState extends State<CustomActionsExamplePage> {
                     const SizedBox(height: 8),
                     Text(
                       'Execute a custom action without registering it first.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade500),
                     ),
                     const SizedBox(height: 12),
                     _buildActionButton(
                       label: 'Execute One-Off Action',
                       icon: Icons.flash_on,
                       color: Colors.orange,
-                      onPressed: _editorController.isReady ? _executeOneOffAction : null,
+                      onPressed: _editorController.isReady
+                          ? _executeOneOffAction
+                          : null,
                     ),
 
                     // Last Action Result
@@ -398,7 +408,8 @@ class _CustomActionsExamplePageState extends State<CustomActionsExamplePage> {
                 child: QuillEditorWidget(
                   controller: _editorController,
                   onContentChanged: _onContentChanged,
-                  initialHtml: '<p>Select and execute custom actions from the panel...</p>',
+                  initialHtml:
+                      '<p>Select and execute custom actions from the panel...</p>',
                 ),
               ),
             ),
@@ -505,7 +516,8 @@ class _CustomActionsExamplePageState extends State<CustomActionsExamplePage> {
                       Text(def.label, overflow: TextOverflow.ellipsis),
                       Text(
                         def.description,
-                        style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                        style: TextStyle(
+                            fontSize: 10, color: Colors.grey.shade500),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -602,7 +614,8 @@ class _CustomActionsExamplePageState extends State<CustomActionsExamplePage> {
             runSpacing: 6,
             children: actionNames
                 .map((name) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(4),
@@ -686,4 +699,3 @@ class _ActionDefinition {
   final String description;
   final IconData icon;
 }
-

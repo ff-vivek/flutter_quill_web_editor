@@ -353,7 +353,8 @@ void main() {
       controller.executeAction('withResponse');
 
       // Simulate response from editor
-      controller.handleActionResponse('withResponse', {'success': true, 'data': 42});
+      controller
+          .handleActionResponse('withResponse', {'success': true, 'data': 42});
 
       expect(receivedResponse, isNotNull);
       expect(receivedResponse!['success'], isTrue);
@@ -454,7 +455,8 @@ void main() {
       for (var i = 0; i < 20; i++) {
         controller.zoomOut();
       }
-      expect(controller.currentZoom, greaterThanOrEqualTo(EditorConfig.minZoom));
+      expect(
+          controller.currentZoom, greaterThanOrEqualTo(EditorConfig.minZoom));
 
       // Zoom in many times
       for (var i = 0; i < 40; i++) {
@@ -567,7 +569,11 @@ void main() {
     });
 
     test('Should send setContents command', () {
-      final delta = {'ops': [{'insert': 'Hello\n'}]};
+      final delta = {
+        'ops': [
+          {'insert': 'Hello\n'}
+        ]
+      };
       controller.setContents(delta);
 
       expect(sentCommands.first['action'], equals('setContents'));
@@ -607,4 +613,3 @@ void main() {
     });
   });
 }
-

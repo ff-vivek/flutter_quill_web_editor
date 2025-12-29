@@ -1,4 +1,13 @@
-example/build/
 .dart_tool/
 build/
-example/.dart_tool
+example/build/
+example/.dart_tool/
+
+# Documentation files (not needed in package)
+COMPARISON_WITH_FLUTTER_QUILL.md
+ENTERPRISE_USER_GUIDE.md
+GEMINI.md
+
+# Deployment scripts and artifacts
+package_deployment.sh
+quill-editor-deployment_*.zip

@@ -168,3 +168,20 @@
   font-display: swap;
 }
 
+/* ============================================
+ * Quill Editor Integration
+ * ============================================ */
+
+/* Font family class - Global */
+.ql-font-mulish { font-family: 'Mulish', sans-serif; }
+
+/* Font family class - Editor content */
+.ql-editor .ql-font-mulish { font-family: 'Mulish', sans-serif; }
+
+/* Font picker dropdown label */
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="mulish"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="mulish"]::before {
+  content: 'Mulish';
+  font-family: 'Mulish', sans-serif;
+}
+

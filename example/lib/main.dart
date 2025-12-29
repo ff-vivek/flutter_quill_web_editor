@@ -7,6 +7,114 @@ import 'pages/editor_example_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ============================================
+  // CUSTOM FONT REGISTRATION EXAMPLE
+  // ============================================
+  // This demonstrates the three-priority font loading strategy:
+  //
+  // Priority 1: Hosted Assets (your CDN/server)
+  //   - Use 'hostedFontBaseUrl' + 'hostedFontVariants'
+  //   - Best for: custom/proprietary fonts, offline support
+  //
+  // Priority 2: Google Fonts (optional fallback)
+  //   - Use 'googleFontsFamily'
+  //   - Best for: fallback if hosted assets fail
+  //
+  // Priority 3: System Fallback (always works)
+  //   - Use 'fallback' (e.g., 'sans-serif', 'Arial, sans-serif')
+  //   - Best for: graceful degradation
+  //
+  // See also:
+  // - example/web/styles/mulish-font.css (local @font-face for editor)
+  // - example/web/js/config-override.js (adds font to editor dropdown)
+  // ============================================
+  FontRegistry.instance.registerFont(
+    CustomFontConfig(
+      name: 'Mulish',
+      value: 'mulish',
+      fontFamily: 'Mulish',
+      hostedFontBaseUrl:
+          'https://i-treasuryuat.icicibank.com/utsuat/utaweb/fonts/',
+      hostedFontVariants: [
+        // ExtraLight (200)
+        FontVariant(
+            url: 'Mulish-ExtraLight.ttf', weight: 200, format: 'truetype'),
+        FontVariant(
+            url: 'Mulish-ExtraLightItalic.ttf',
+            weight: 200,
+            isItalic: true,
+            format: 'truetype'),
+        // Light (300)
+        FontVariant(url: 'Mulish-Light.ttf', weight: 300, format: 'truetype'),
+        FontVariant(
+            url: 'Mulish-LightItalic.ttf',
+            weight: 300,
+            isItalic: true,
+            format: 'truetype'),
+        // Regular (400)
+        FontVariant(url: 'Mulish-Regular.ttf', weight: 400, format: 'truetype'),
+        FontVariant(
+            url: 'Mulish-Italic.ttf',
+            weight: 400,
+            isItalic: true,
+            format: 'truetype'),
+        // Medium (500)
+        FontVariant(url: 'Mulish-Medium.ttf', weight: 500, format: 'truetype'),
+        FontVariant(
+            url: 'Mulish-MediumItalic.ttf',
+            weight: 500,
+            isItalic: true,
+            format: 'truetype'),
+        // SemiBold (600)
+        FontVariant(
+            url: 'Mulish-SemiBold.ttf', weight: 600, format: 'truetype'),
+        FontVariant(
+            url: 'Mulish-SemiBoldItalic.ttf',
+            weight: 600,
+            isItalic: true,
+            format: 'truetype'),
+        // Bold (700)
+        FontVariant(url: 'Mulish-Bold.ttf', weight: 700, format: 'truetype'),
+        FontVariant(
+            url: 'Mulish-BoldItalic.ttf',
+            weight: 700,
+            isItalic: true,
+            format: 'truetype'),
+        // ExtraBold (800)
+        FontVariant(
+            url: 'Mulish-ExtraBold.ttf', weight: 800, format: 'truetype'),
+        FontVariant(
+            url: 'Mulish-ExtraBoldItalic.ttf',
+            weight: 800,
+            isItalic: true,
+            format: 'truetype'),
+        // Black (900)
+        FontVariant(url: 'Mulish-Black.ttf', weight: 900, format: 'truetype'),
+        FontVariant(
+            url: 'Mulish-BlackItalic.ttf',
+            weight: 900,
+            isItalic: true,
+            format: 'truetype'),
+      ],
+
+      // Priority 1: Hosted fonts (uncomment and configure for your CDN)
+      // hostedFontBaseUrl: 'https://cdn.yourcompany.com/fonts/',
+      // hostedFontVariants: [
+      //   FontVariant(url: 'Mulish-Regular.woff2', weight: 400, format: 'woff2'),
+      //   FontVariant(url: 'Mulish-Medium.woff2', weight: 500, format: 'woff2'),
+      //   FontVariant(url: 'Mulish-SemiBold.woff2', weight: 600, format: 'woff2'),
+      //   FontVariant(url: 'Mulish-Bold.woff2', weight: 700, format: 'woff2'),
+      //   FontVariant(url: 'Mulish-Italic.woff2', weight: 400, isItalic: true, format: 'woff2'),
+      // ],
+      // Priority 2: Google Fonts fallback (works online)
+      googleFontsFamily:
+          'Mulish:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900',
+      // Priority 3: System fallback
+      fallback: 'sans-serif',
+    ),
+  );
+
   runApp(const QuillEditorExampleApp());
 }
 

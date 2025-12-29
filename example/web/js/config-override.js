@@ -40,7 +40,7 @@ export const TOOLBAR_OPTIONS = {
     // Replace font section with our extended whitelist
     if (Array.isArray(section) && section.length > 0 && 
         typeof section[0] === 'object' && section[0].font) {
-      return [{ 'font': ['', ...FONT_WHITELIST] }];
+      return [{ 'font': FONT_WHITELIST }];
     }
     return section;
   })

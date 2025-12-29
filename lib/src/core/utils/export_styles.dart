@@ -1,4 +1,4 @@
-import '../constants/app_fonts.dart';
+import 'font_registry.dart';
 
 /// CSS styles for HTML export.
 ///
@@ -6,11 +6,14 @@ import '../constants/app_fonts.dart';
 /// consistent rendering outside the editor.
 abstract class ExportStyles {
   /// Complete CSS for standalone HTML export.
+  ///
+  /// Includes font classes from both package defaults and any custom
+  /// fonts registered via [FontRegistry].
   static String get fullCss => '''
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body { 
-  font-family: 'Crimson Pro', Georgia, serif; 
+  font-family: 'Roboto', sans-serif; 
   font-size: 1.125rem;
   line-height: 1.8;
   color: #2c2825;
@@ -33,12 +36,15 @@ body {
 .ql-editor h6 { font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5em; }
 .ql-editor p { margin-bottom: 1em; }
 .ql-editor blockquote { border-left: 4px solid #c45d35; padding-left: 16px; margin: 24px 0; color: #6b6560; font-style: italic; }
-.ql-editor pre { background: #f8f6f3; border-radius: 8px; padding: 16px; font-family: 'Source Code Pro', monospace; font-size: 0.875rem; overflow-x: auto; }
+.ql-editor pre { background: #f8f6f3; border-radius: 8px; padding: 16px; font-family: 'Roboto', monospace; font-size: 0.875rem; overflow-x: auto; }
 .ql-editor a { color: #c45d35; text-decoration: underline; }
-.ql-editor code { background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: 'Source Code Pro', monospace; }
+.ql-editor code { background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: 'Roboto', monospace; }
+
+/* Custom @font-face declarations for self-hosted fonts */
+${FontRegistry.instance.generateFontFaceCSS()}
 
 /* Font family classes */
-${_generateFontClasses()}
+${FontRegistry.instance.generateFontClasses()}
 
 /* Font size classes */
 .ql-size-small { font-size: 0.75em; }
@@ -199,25 +205,12 @@ sup { vertical-align: super; font-size: smaller; }
 }
 ''';
 
-  /// Generates font family CSS classes from configuration.
-  static String _generateFontClasses() {
-    final buffer = StringBuffer();
-    for (final font in AppFonts.availableFonts) {
-      if (font.value.isNotEmpty) {
-        buffer.writeln(
-          ".ql-font-${font.value} { font-family: '${font.fontFamily}', sans-serif; }",
-        );
-      }
-    }
-    return buffer.toString();
-  }
-
   /// External stylesheets to include in export.
-  static List<String> get externalStylesheets => [
-        'https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css',
-        'https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css',
-        AppFonts.googleFontsUrl,
-      ];
+  ///
+  /// Includes the Google Fonts URL with any custom fonts registered
+  /// via [FontRegistry].
+  static List<String> get externalStylesheets =>
+      FontRegistry.instance.externalStylesheets;
 
   /// Generates complete HTML document from content.
   static String generateHtmlDocument(String content, {String? title}) {

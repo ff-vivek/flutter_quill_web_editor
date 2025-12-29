@@ -70,6 +70,9 @@
 /// - [HtmlCleaner] - Clean HTML for export
 /// - [TextStats] - Calculate word/character counts
 /// - [ExportStyles] - CSS for exported HTML
+/// - [FontRegistry] - Register custom fonts for export
+/// - [CustomFontConfig] - Configuration for custom fonts with priority loading
+/// - [FontVariant] - Individual font file configuration (weight, style, URL)
 ///
 /// ### Constants
 /// - [AppColors] - Color palette
@@ -86,6 +89,7 @@ export 'src/core/constants/app_fonts.dart';
 export 'src/core/constants/editor_config.dart';
 export 'src/core/theme/app_theme.dart';
 export 'src/core/utils/export_styles.dart';
+export 'src/core/utils/font_registry.dart';
 export 'src/core/utils/html_cleaner.dart';
 export 'src/core/utils/text_stats.dart';
 // Services

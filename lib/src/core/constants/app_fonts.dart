@@ -3,29 +3,24 @@
 /// Defines available fonts, their CSS class names, and display labels.
 abstract class AppFonts {
   /// Default sans-serif font family
-  static const String sansFontFamily = 'DM Sans';
+  static const String sansFontFamily = 'Roboto';
 
   /// Default serif font family (for editor content)
-  static const String serifFontFamily = 'Crimson Pro';
+  static const String serifFontFamily = 'Roboto';
 
   /// Monospace font family (for code blocks)
-  static const String monoFontFamily = 'Source Code Pro';
+  static const String monoFontFamily = 'Roboto';
 
   /// Available fonts in the editor with their Quill class names
+  /// Note: Custom fonts can be added via FontRegistry.registerFont()
   static const List<FontConfig> availableFonts = [
-    FontConfig(name: 'Sans Serif', value: '', fontFamily: 'sans-serif'),
+    FontConfig(
+        name: 'Sans Serif', value: 'sans-serif', fontFamily: 'sans-serif'),
     FontConfig(name: 'Roboto', value: 'roboto', fontFamily: 'Roboto'),
-    FontConfig(name: 'Open Sans', value: 'open-sans', fontFamily: 'Open Sans'),
-    FontConfig(name: 'Lato', value: 'lato', fontFamily: 'Lato'),
     FontConfig(
-        name: 'Montserrat', value: 'montserrat', fontFamily: 'Montserrat'),
-    FontConfig(
-        name: 'Source Code',
-        value: 'source-code',
-        fontFamily: 'Source Code Pro'),
-    FontConfig(
-        name: 'Crimson Pro', value: 'crimson', fontFamily: 'Crimson Pro'),
-    FontConfig(name: 'DM Sans', value: 'dm-sans', fontFamily: 'DM Sans'),
+        name: 'Merriweather',
+        value: 'merriweather',
+        fontFamily: 'Merriweather'),
   ];
 
   /// Font size options
@@ -45,9 +40,9 @@ abstract class AppFonts {
     LineHeightConfig(name: '3.0', value: '3', cssClass: 'ql-line-height-3'),
   ];
 
-  /// Google Fonts URL for loading all required fonts
+  /// Google Fonts URL for loading required fonts
   static const String googleFontsUrl =
-      'https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=DM+Sans:wght@400;500;600&family=Roboto:wght@400;500&family=Open+Sans:wght@400;500&family=Lato:wght@400;700&family=Montserrat:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap';
+      'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap';
 }
 
 /// Configuration for a font option

@@ -4,49 +4,42 @@
  * Shared configuration for Quill editor
  */
 
-// Font whitelist for Quill
+// Font whitelist for Quill (package defaults)
+// Custom fonts can be added via config-override.js in your app
 export const FONT_WHITELIST = [
-  'roboto', 
-  'open-sans', 
-  'lato', 
-  'montserrat', 
-  'source-code', 
-  'crimson', 
-  'dm-sans'
+  'sans-serif',
+  'roboto',
+  'merriweather'
 ];
 
 // Size whitelist for Quill
 export const SIZE_WHITELIST = ['small', false, 'large', 'huge'];
 
 // Font family mapping - maps common fonts to Quill font classes
+// Custom mappings can be extended in config-override.js
 export const FONT_FAMILY_MAP = {
   // Direct mappings
+  'sans-serif': 'sans-serif',
   'roboto': 'roboto',
-  'open sans': 'open-sans',
-  'opensans': 'open-sans',
-  'lato': 'lato',
-  'montserrat': 'montserrat',
-  'source code pro': 'source-code',
-  'sourcecodepro': 'source-code',
-  'crimson pro': 'crimson',
-  'crimsonpro': 'crimson',
-  'crimson text': 'crimson',
-  'dm sans': 'dm-sans',
-  'dmsans': 'dm-sans',
-  // Common fonts to map
-  'arial': 'roboto',
-  'helvetica': 'roboto',
-  'verdana': 'open-sans',
-  'tahoma': 'open-sans',
-  'trebuchet ms': 'montserrat',
-  'georgia': 'crimson',
-  'times': 'crimson',
-  'times new roman': 'crimson',
-  'courier': 'source-code',
-  'courier new': 'source-code',
-  'consolas': 'source-code',
-  'monaco': 'source-code',
-  'menlo': 'source-code'
+  'merriweather': 'merriweather',
+  // Common sans-serif fonts
+  'arial': 'sans-serif',
+  'helvetica': 'sans-serif',
+  'verdana': 'sans-serif',
+  'tahoma': 'sans-serif',
+  'trebuchet ms': 'sans-serif',
+  // Serif fonts map to Merriweather
+  'georgia': 'merriweather',
+  'times': 'merriweather',
+  'times new roman': 'merriweather',
+  'palatino': 'merriweather',
+  'garamond': 'merriweather',
+  // Monospace fonts (keep as roboto for now)
+  'courier': 'roboto',
+  'courier new': 'roboto',
+  'consolas': 'roboto',
+  'monaco': 'roboto',
+  'menlo': 'roboto'
 };
 
 // Toolbar configuration
@@ -56,7 +49,7 @@ export const TOOLBAR_OPTIONS = {
     [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
     
     // Font family
-    [{ 'font': ['', ...FONT_WHITELIST] }],
+    [{ 'font': FONT_WHITELIST }],
     
     // Font size
     [{ 'size': ['small', false, 'large', 'huge'] }],

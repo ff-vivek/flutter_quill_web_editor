@@ -30,7 +30,7 @@ void main() {
   // - example/web/js/config-override.js (adds font to editor dropdown)
   // ============================================
   FontRegistry.instance.registerFont(
-    CustomFontConfig(
+    const CustomFontConfig(
       name: 'Mulish',
       value: 'mulish',
       fontFamily: 'Mulish',
@@ -97,16 +97,6 @@ void main() {
             isItalic: true,
             format: 'truetype'),
       ],
-
-      // Priority 1: Hosted fonts (uncomment and configure for your CDN)
-      // hostedFontBaseUrl: 'https://cdn.yourcompany.com/fonts/',
-      // hostedFontVariants: [
-      //   FontVariant(url: 'Mulish-Regular.woff2', weight: 400, format: 'woff2'),
-      //   FontVariant(url: 'Mulish-Medium.woff2', weight: 500, format: 'woff2'),
-      //   FontVariant(url: 'Mulish-SemiBold.woff2', weight: 600, format: 'woff2'),
-      //   FontVariant(url: 'Mulish-Bold.woff2', weight: 700, format: 'woff2'),
-      //   FontVariant(url: 'Mulish-Italic.woff2', weight: 400, isItalic: true, format: 'woff2'),
-      // ],
       // Priority 2: Google Fonts fallback (works online)
       googleFontsFamily:
           'Mulish:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900',

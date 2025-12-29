@@ -1,6 +1,6 @@
 name: quill_web_editor
 description: A rich text editor package for Flutter Web powered by Quill.js. Provides full-featured editing with tables, media embedding, custom fonts, and HTML export.
-version: 1.1.0
+version: 1.2.0
 homepage: https://github.com/ff-vivek/flutter_quill_web_editor
 repository: https://github.com/ff-vivek/flutter_quill_web_editor
 issue_tracker: https://github.com/ff-vivek/flutter_quill_web_editor/issues
@@ -31,4 +31,18 @@ flutter:
     - web/quill_viewer.html
     - web/js/
     - web/styles/
+
+  # Test fonts for google_fonts package (used in unit tests)
+  fonts:
+    - family: CrimsonPro
+      fonts:
+        - asset: test/fonts/CrimsonPro-Regular.ttf
+        - asset: test/fonts/CrimsonPro-SemiBold.ttf
+          weight: 600
+    - family: DMSans
+      fonts:
+        - asset: test/fonts/DMSans-Regular.ttf
+    - family: SourceCodePro
+      fonts:
+        - asset: test/fonts/SourceCodePro-Regular.ttf
 

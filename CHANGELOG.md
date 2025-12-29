@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-12-29
+
+### Added
+- **Custom Font Registration API** - New `FontRegistry` singleton for enterprise font management
+  - `CustomFontConfig` class with priority-based loading (hosted → Google Fonts → system fallback)
+  - `FontVariant` class for defining font weight/style variants
+  - `registerFont()` / `registerFonts()` for adding custom fonts
+  - Auto-generates @font-face CSS for hosted fonts
+  - Auto-generates Google Fonts URL for fallback fonts
+  - `generateLoadingStrategySummary()` for debugging font configuration
+- **Default Font Support** - Configure a default font for the editor
+- **FOUC Prevention** - Enhanced font loading experience to prevent Flash of Unstyled Content
+- **Enterprise User Guide** - Comprehensive documentation for end users covering all editor features
+
+### Fixed
+- Fixed content replacement logic in `handleCommand` to ensure proper table module initialization when setting HTML content
+
+### Changed
+- Simplified font handling by removing unused font configurations
+- Updated Google Fonts integration to be more modular
+
 ## [1.1.0] - 2025-12-23
 
 ### Added

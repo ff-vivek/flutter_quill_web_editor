@@ -321,7 +321,7 @@ class FontRegistry {
     }
 
     // Append custom fonts to the base URL
-    final baseUrl = AppFonts.googleFontsUrl;
+    const baseUrl = AppFonts.googleFontsUrl;
     final displaySwapIndex = baseUrl.indexOf('&display=swap');
 
     if (displaySwapIndex != -1) {

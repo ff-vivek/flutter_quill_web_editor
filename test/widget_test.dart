@@ -94,7 +94,8 @@ void main() {
 
     test('Should have available fonts list', () {
       expect(AppFonts.availableFonts, isNotEmpty);
-      expect(AppFonts.availableFonts.length, greaterThanOrEqualTo(7));
+      // Package ships with Roboto by default; custom fonts via FontRegistry
+      expect(AppFonts.availableFonts.length, greaterThanOrEqualTo(1));
     });
 
     test('Each font should have required properties', () {

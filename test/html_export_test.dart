@@ -86,18 +86,8 @@ void main() {
     test('Should include correct font-family values for each font class', () {
       final css = ExportStyles.fullCss;
 
+      // Package ships with Roboto by default; custom fonts via FontRegistry
       expect(css.contains(".ql-font-roboto { font-family: 'Roboto'"), isTrue);
-      expect(css.contains(".ql-font-open-sans { font-family: 'Open Sans'"),
-          isTrue);
-      expect(css.contains(".ql-font-lato { font-family: 'Lato'"), isTrue);
-      expect(css.contains(".ql-font-montserrat { font-family: 'Montserrat'"),
-          isTrue);
-      expect(
-          css.contains(".ql-font-source-code { font-family: 'Source Code Pro'"),
-          isTrue);
-      expect(css.contains(".ql-font-crimson { font-family: 'Crimson Pro'"),
-          isTrue);
-      expect(css.contains(".ql-font-dm-sans { font-family: 'DM Sans'"), isTrue);
     });
 
     test('Should include all required Google Fonts in link', () {
@@ -107,13 +97,8 @@ void main() {
         orElse: () => '',
       );
 
-      expect(fontsUrl.contains('Crimson+Pro'), isTrue);
-      expect(fontsUrl.contains('DM+Sans'), isTrue);
+      // Package ships with Roboto by default; custom fonts via FontRegistry
       expect(fontsUrl.contains('Roboto'), isTrue);
-      expect(fontsUrl.contains('Open+Sans'), isTrue);
-      expect(fontsUrl.contains('Lato'), isTrue);
-      expect(fontsUrl.contains('Montserrat'), isTrue);
-      expect(fontsUrl.contains('Source+Code+Pro'), isTrue);
     });
   });
 
@@ -475,8 +460,9 @@ void main() {
       expect(html.contains('ql-font-roboto'), isTrue);
     });
 
-    test('Font list should have exactly 8 fonts (including default)', () {
-      expect(AppFonts.availableFonts.length, equals(8));
+    test('Font list should have at least 1 font (Roboto by default)', () {
+      // Package ships with Roboto by default; custom fonts via FontRegistry
+      expect(AppFonts.availableFonts.length, greaterThanOrEqualTo(1));
     });
 
     test('Size list should have exactly 4 sizes (including normal)', () {

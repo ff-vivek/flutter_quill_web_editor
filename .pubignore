@@ -29,3 +29,7 @@ publish.sh
 # Exclude deployment artifacts
 quill-editor-deployment_*.zip
 *.zip
+
+# Exclude credential files
+credentials.json
+**/credentials.json

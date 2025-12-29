@@ -213,10 +213,24 @@ sup { vertical-align: super; font-size: smaller; }
       FontRegistry.instance.externalStylesheets;
 
   /// Generates complete HTML document from content.
-  static String generateHtmlDocument(String content, {String? title}) {
+  ///
+  /// [content] - The HTML content to wrap.
+  /// [title] - Optional document title.
+  /// [defaultFont] - Optional default font value (e.g., 'mulish', 'roboto').
+  ///   If provided, adds the corresponding font class to the editor wrapper.
+  static String generateHtmlDocument(
+    String content, {
+    String? title,
+    String? defaultFont,
+  }) {
     final stylesheetLinks = externalStylesheets
         .map((url) => '<link href="$url" rel="stylesheet">')
         .join('\n  ');
+
+    // Build the editor class with optional default font
+    final editorClass = defaultFont != null && defaultFont.isNotEmpty
+        ? 'ql-editor ql-font-$defaultFont'
+        : 'ql-editor';
 
     return '''
 <!DOCTYPE html>
@@ -231,7 +245,7 @@ $fullCss
   </style>
 </head>
 <body>
-  <div class="ql-editor">$content</div>
+  <div class="$editorClass">$content</div>
 </body>
 </html>
 ''';

@@ -327,6 +327,36 @@ export function handleCommand(data, editor, Quill) {
       }
       break;
 
+    case 'setDefaultFont':
+      if (data.font) {
+        const fontValue = data.font;
+        console.log('Setting default font:', fontValue);
+        
+        // Set the default font class on the editor container
+        const editorEl = document.querySelector('.ql-editor');
+        if (editorEl) {
+          // Remove any existing font classes
+          const classesToRemove = [];
+          editorEl.classList.forEach(cls => {
+            if (cls.startsWith('ql-font-')) {
+              classesToRemove.push(cls);
+            }
+          });
+          classesToRemove.forEach(cls => editorEl.classList.remove(cls));
+          
+          // Add the new default font class
+          editorEl.classList.add(`ql-font-${fontValue}`);
+        }
+        
+        // Also set it as the default format for new text
+        // This ensures new text typed will have this font
+        editor.format('font', fontValue, Quill.sources.SILENT);
+        
+        // Store the default font for reference
+        window.defaultEditorFont = fontValue;
+      }
+      break;
+
     case 'customAction':
       // Handle user-defined custom actions
       if (data.customActionName) {

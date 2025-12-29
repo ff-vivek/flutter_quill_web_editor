@@ -7,7 +7,7 @@
 /* Viewer body styles */
 html.viewer-mode, 
 body.viewer-mode {
-  font-family: 'Crimson Pro', Georgia, serif;
+  font-family: 'Roboto', sans-serif;
   font-size: 1.125rem;
   line-height: 1.8;
   color: #2c2825;

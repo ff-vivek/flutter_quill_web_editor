@@ -12,18 +12,25 @@ class DocumentService {
   /// [content] - The HTML content to generate document from.
   /// [cleanHtml] - Whether to clean editor artifacts from HTML (defaults to true).
   /// [title] - Optional title for the HTML document.
+  /// [defaultFont] - Optional default font value (e.g., 'mulish', 'roboto').
+  ///   If provided, applies this font to the entire document.
   /// Returns the complete HTML document as a string.
   static String generateHtmlDocument(
     String content, {
     bool cleanHtml = true,
     String? title,
+    String? defaultFont,
   }) {
     // Clean HTML if requested
     final cleanedContent =
         cleanHtml ? HtmlCleaner.cleanForExport(content) : content;
 
     // Generate full HTML document with styles
-    return ExportStyles.generateHtmlDocument(cleanedContent, title: title);
+    return ExportStyles.generateHtmlDocument(
+      cleanedContent,
+      title: title,
+      defaultFont: defaultFont,
+    );
   }
 
   /// Downloads the HTML content as a file.
@@ -31,13 +38,19 @@ class DocumentService {
   /// [content] - The HTML content to download.
   /// [filename] - The name of the file (defaults to 'document.html').
   /// [cleanHtml] - Whether to clean editor artifacts from HTML (defaults to true).
+  /// [defaultFont] - Optional default font value (e.g., 'mulish', 'roboto').
   static void downloadHtml(
     String content, {
     String filename = 'document.html',
     bool cleanHtml = true,
+    String? defaultFont,
   }) {
     // Generate full HTML document
-    final fullHtml = generateHtmlDocument(content, cleanHtml: cleanHtml);
+    final fullHtml = generateHtmlDocument(
+      content,
+      cleanHtml: cleanHtml,
+      defaultFont: defaultFont,
+    );
 
     // Create blob and download
     final bytes = utf8.encode(fullHtml);
@@ -103,8 +116,13 @@ class DocumentService {
   /// Prints the HTML content.
   ///
   /// Opens a new window with the content and triggers the print dialog.
-  static void printHtml(String content) {
-    final fullHtml = generateHtmlDocument(content, cleanHtml: true);
+  /// [defaultFont] - Optional default font value (e.g., 'mulish', 'roboto').
+  static void printHtml(String content, {String? defaultFont}) {
+    final fullHtml = generateHtmlDocument(
+      content,
+      cleanHtml: true,
+      defaultFont: defaultFont,
+    );
 
     // Create blob URL and open in new window for printing
     final bytes = utf8.encode(fullHtml);

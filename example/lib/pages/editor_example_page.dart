@@ -14,6 +14,9 @@ class EditorExamplePage extends StatefulWidget {
 class _EditorExamplePageState extends State<EditorExamplePage> {
   final GlobalKey<QuillEditorWidgetState> _editorKey = GlobalKey();
 
+  /// Default font for the editor - used consistently across editor, preview, and export.
+  static const String _defaultFont = 'mulish';
+
   String _currentHtml = '';
   int _wordCount = 0;
   int _charCount = 0;
@@ -113,7 +116,10 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
       _showSnackBar('No content to download');
       return;
     }
-    DocumentService.downloadHtml(_currentHtml);
+    DocumentService.downloadHtml(
+      _currentHtml,
+      defaultFont: _defaultFont,
+    );
     _showSnackBar('Document downloaded');
   }
 
@@ -126,6 +132,7 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
       _currentHtml,
       cleanHtml: true,
       title: 'Quill Editor Document',
+      defaultFont: _defaultFont,
     );
     final separator = '=' * 80;
 
@@ -146,7 +153,11 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
       _showSnackBar('No content to preview');
       return;
     }
-    HtmlPreviewDialog.show(context, _currentHtml);
+    HtmlPreviewDialog.show(
+      context,
+      _currentHtml,
+      defaultFont: _defaultFont,
+    );
   }
 
   void _showInsertHtmlDialog() async {
@@ -277,6 +288,7 @@ class _EditorExamplePageState extends State<EditorExamplePage> {
                   key: _editorKey,
                   onContentChanged: _onContentChanged,
                   initialHtml: _sampleHtml,
+                  defaultEditorFont: _defaultFont,
                 ),
               ),
             ),

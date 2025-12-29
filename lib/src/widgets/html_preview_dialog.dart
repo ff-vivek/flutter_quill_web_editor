@@ -19,6 +19,7 @@ class HtmlPreviewDialog extends StatelessWidget {
     super.key,
     required this.html,
     this.title = 'HTML Preview',
+    this.defaultFont,
   });
 
   /// The HTML content to preview.
@@ -27,19 +28,32 @@ class HtmlPreviewDialog extends StatelessWidget {
   /// Dialog title.
   final String title;
 
+  /// Default font for the preview (e.g., 'mulish', 'roboto').
+  final String? defaultFont;
+
   /// Shows the preview dialog.
-  static Future<void> show(BuildContext context, String html) {
+  ///
+  /// [defaultFont] - Optional default font value (e.g., 'mulish', 'roboto').
+  static Future<void> show(
+    BuildContext context,
+    String html, {
+    String? defaultFont,
+  }) {
     return showDialog(
       context: context,
       builder: (context) => PointerInterceptor(
-        child: HtmlPreviewDialog(html: html),
+        child: HtmlPreviewDialog(html: html, defaultFont: defaultFont),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return _HtmlPreviewDialogContent(html: html, title: title);
+    return _HtmlPreviewDialogContent(
+      html: html,
+      title: title,
+      defaultFont: defaultFont,
+    );
   }
 }
 
@@ -47,10 +61,12 @@ class _HtmlPreviewDialogContent extends StatefulWidget {
   const _HtmlPreviewDialogContent({
     required this.html,
     required this.title,
+    this.defaultFont,
   });
 
   final String html;
   final String title;
+  final String? defaultFont;
 
   @override
   State<_HtmlPreviewDialogContent> createState() =>
@@ -141,6 +157,7 @@ class _HtmlPreviewDialogContentState extends State<_HtmlPreviewDialogContent> {
               child: _HtmlPreviewWidget(
                 key: _previewKey,
                 html: widget.html,
+                defaultFont: widget.defaultFont,
                 onZoomChanged: (zoom) {
                   setState(() => _currentZoom = zoom);
                 },
@@ -158,10 +175,12 @@ class _HtmlPreviewWidget extends StatefulWidget {
   const _HtmlPreviewWidget({
     super.key,
     required this.html,
+    this.defaultFont,
     this.onZoomChanged,
   });
 
   final String html;
+  final String? defaultFont;
   final void Function(double zoom)? onZoomChanged;
 
   @override
@@ -189,6 +208,11 @@ class _HtmlPreviewWidgetState extends State<_HtmlPreviewWidget> {
         .replaceAll('\n', '\\n')
         .replaceAll('\r', '');
 
+    // Build the viewer class with optional default font
+    final viewerClass = widget.defaultFont != null && widget.defaultFont!.isNotEmpty
+        ? 'ql-editor ql-font-${widget.defaultFont}'
+        : 'ql-editor';
+
     final previewHtml = '''
 <!DOCTYPE html>
 <html>
@@ -205,7 +229,7 @@ class _HtmlPreviewWidgetState extends State<_HtmlPreviewWidget> {
   </style>
 </head>
 <body>
-  <div id="viewer" class="ql-editor"></div>
+  <div id="viewer" class="$viewerClass"></div>
   <script>
     function cleanHtmlForPreview(html) {
       const parser = new DOMParser();

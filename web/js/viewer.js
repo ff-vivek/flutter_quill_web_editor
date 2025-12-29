@@ -58,6 +58,27 @@ function handleViewerCommand(data, viewer) {
         viewer.style.width = `${100 / zoomLevel}%`;
       }
       break;
+      
+    case 'setDefaultFont':
+      if (data.font && viewer) {
+        console.log('Setting default font in viewer:', data.font);
+        
+        // Remove any existing font classes
+        const classesToRemove = [];
+        viewer.classList.forEach(cls => {
+          if (cls.startsWith('ql-font-')) {
+            classesToRemove.push(cls);
+          }
+        });
+        classesToRemove.forEach(cls => viewer.classList.remove(cls));
+        
+        // Add the new default font class
+        viewer.classList.add(`ql-font-${data.font}`);
+        
+        // Store the default font for reference
+        window.defaultEditorFont = data.font;
+      }
+      break;
   }
 }
 

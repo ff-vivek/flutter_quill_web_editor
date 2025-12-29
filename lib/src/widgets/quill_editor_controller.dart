@@ -404,6 +404,22 @@ class QuillEditorController extends ChangeNotifier {
     });
   }
 
+  /// Set the default font for the editor.
+  ///
+  /// This font will be applied to new content and as the base font.
+  /// Use the font value (e.g., 'roboto', 'mulish').
+  ///
+  /// Example:
+  /// ```dart
+  /// controller.setDefaultFont('mulish');
+  /// ```
+  void setDefaultFont(String fontValue) {
+    _executeCommand({
+      'action': 'setDefaultFont',
+      'font': fontValue,
+    });
+  }
+
   /// Zoom in the editor (increase by [EditorConfig.zoomStep]).
   void zoomIn() {
     _currentZoom = (_currentZoom + EditorConfig.zoomStep)

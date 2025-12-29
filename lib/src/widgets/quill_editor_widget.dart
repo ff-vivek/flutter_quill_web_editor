@@ -87,6 +87,7 @@ class QuillEditorWidget extends StatefulWidget {
     this.placeholder,
     this.editorHtmlPath,
     this.viewerHtmlPath,
+    this.defaultEditorFont,
   });
 
   /// Controller for programmatic access to the editor.
@@ -144,6 +145,19 @@ class QuillEditorWidget extends StatefulWidget {
 
   /// Path to the viewer HTML file. Defaults to [EditorConfig.viewerHtmlPath].
   final String? viewerHtmlPath;
+
+  /// Default font for the editor content.
+  ///
+  /// This sets the default font that will be applied to new text and
+  /// the editor's base font. Use the font value (e.g., 'roboto', 'mulish').
+  ///
+  /// Example:
+  /// ```dart
+  /// QuillEditorWidget(
+  ///   defaultEditorFont: 'mulish',
+  /// )
+  /// ```
+  final String? defaultEditorFont;
 
   @override
   State<QuillEditorWidget> createState() => QuillEditorWidgetState();
@@ -302,11 +316,27 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
     _hasInitializedContent = true;
 
     Future.delayed(const Duration(milliseconds: 100), () {
+      // Set default font first if specified
+      if (widget.defaultEditorFont != null &&
+          widget.defaultEditorFont!.isNotEmpty) {
+        setDefaultFont(widget.defaultEditorFont!);
+      }
+
       if (widget.initialDelta != null) {
         setContents(widget.initialDelta);
       } else if (widget.initialHtml != null && widget.initialHtml!.isNotEmpty) {
         setHTML(widget.initialHtml!);
       }
+    });
+  }
+
+  /// Set the default font for the editor.
+  ///
+  /// This font will be applied to new content and as the base font.
+  void setDefaultFont(String fontValue) {
+    _sendCommand({
+      'action': 'setDefaultFont',
+      'font': fontValue,
     });
   }
 

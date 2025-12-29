@@ -14,13 +14,7 @@ abstract class AppFonts {
   /// Available fonts in the editor with their Quill class names
   /// Note: Custom fonts can be added via FontRegistry.registerFont()
   static const List<FontConfig> availableFonts = [
-    FontConfig(
-        name: 'Sans Serif', value: 'sans-serif', fontFamily: 'sans-serif'),
     FontConfig(name: 'Roboto', value: 'roboto', fontFamily: 'Roboto'),
-    FontConfig(
-        name: 'Merriweather',
-        value: 'merriweather',
-        fontFamily: 'Merriweather'),
   ];
 
   /// Font size options
@@ -42,7 +36,7 @@ abstract class AppFonts {
 
   /// Google Fonts URL for loading required fonts
   static const String googleFontsUrl =
-      'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap';
+      'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap';
 }
 
 /// Configuration for a font option

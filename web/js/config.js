@@ -7,9 +7,7 @@
 // Font whitelist for Quill (package defaults)
 // Custom fonts can be added via config-override.js in your app
 export const FONT_WHITELIST = [
-  'sans-serif',
-  'roboto',
-  'merriweather'
+  'roboto'
 ];
 
 // Size whitelist for Quill
@@ -19,22 +17,14 @@ export const SIZE_WHITELIST = ['small', false, 'large', 'huge'];
 // Custom mappings can be extended in config-override.js
 export const FONT_FAMILY_MAP = {
   // Direct mappings
-  'sans-serif': 'sans-serif',
   'roboto': 'roboto',
-  'merriweather': 'merriweather',
-  // Common sans-serif fonts
-  'arial': 'sans-serif',
-  'helvetica': 'sans-serif',
-  'verdana': 'sans-serif',
-  'tahoma': 'sans-serif',
-  'trebuchet ms': 'sans-serif',
-  // Serif fonts map to Merriweather
-  'georgia': 'merriweather',
-  'times': 'merriweather',
-  'times new roman': 'merriweather',
-  'palatino': 'merriweather',
-  'garamond': 'merriweather',
-  // Monospace fonts (keep as roboto for now)
+  // Common sans-serif fonts map to roboto
+  'arial': 'roboto',
+  'helvetica': 'roboto',
+  'verdana': 'roboto',
+  'tahoma': 'roboto',
+  'trebuchet ms': 'roboto',
+  // Monospace fonts
   'courier': 'roboto',
   'courier new': 'roboto',
   'consolas': 'roboto',

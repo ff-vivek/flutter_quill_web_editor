@@ -7,26 +7,16 @@
  */
 
 /* Font family support - Global */
-.ql-font-sans-serif { font-family: sans-serif; }
 .ql-font-roboto { font-family: 'Roboto', sans-serif; }
-.ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
 
 /* Font family support - Editor content */
-.ql-editor .ql-font-sans-serif { font-family: sans-serif; }
 .ql-editor .ql-font-roboto { font-family: 'Roboto', sans-serif; }
-.ql-editor .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
 
 /* Font picker dropdown labels - Default (fallback for empty value) */
 .ql-snow .ql-picker.ql-font .ql-picker-label::before,
 .ql-snow .ql-picker.ql-font .ql-picker-item::before {
-  content: 'Sans Serif';
-}
-
-/* Font picker - Sans Serif */
-.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="sans-serif"]::before,
-.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="sans-serif"]::before {
-  content: 'Sans Serif';
-  font-family: sans-serif;
+  content: 'Roboto';
+  font-family: 'Roboto', sans-serif;
 }
 
 /* Font picker - Roboto */
@@ -34,11 +24,4 @@
 .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="roboto"]::before {
   content: 'Roboto';
   font-family: 'Roboto', sans-serif;
-}
-
-/* Font picker - Merriweather (Serif) */
-.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="merriweather"]::before,
-.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="merriweather"]::before {
-  content: 'Merriweather';
-  font-family: 'Merriweather', Georgia, serif;
 }

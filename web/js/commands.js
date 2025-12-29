@@ -203,8 +203,10 @@ export function handleCommand(data, editor, Quill) {
         // This is a known limitation of the module
         
         if (data.replace) {
-          // Replace all content
-          editor.setContents(insertDelta, Quill.sources.USER);
+          // Replace all content - use two-step approach to ensure table module properly initializes
+          // Direct setContents() bypasses quill-table-better's rendering logic
+          editor.setContents([], Quill.sources.USER);
+          editor.updateContents(new Delta().retain(0).concat(insertDelta), Quill.sources.USER);
         } else {
           // Insert at current position
           const range = editor.getSelection();

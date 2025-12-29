@@ -315,13 +315,14 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
     if (_hasInitializedContent) return;
     _hasInitializedContent = true;
 
-    Future.delayed(const Duration(milliseconds: 100), () {
-      // Set default font first if specified
-      if (widget.defaultEditorFont != null &&
-          widget.defaultEditorFont!.isNotEmpty) {
-        setDefaultFont(widget.defaultEditorFont!);
-      }
+    // Set default font IMMEDIATELY (no delay needed for styling)
+    if (widget.defaultEditorFont != null &&
+        widget.defaultEditorFont!.isNotEmpty) {
+      setDefaultFont(widget.defaultEditorFont!);
+    }
 
+    // Small delay for content to allow editor to fully initialize
+    Future.delayed(const Duration(milliseconds: 100), () {
       if (widget.initialDelta != null) {
         setContents(widget.initialDelta);
       } else if (widget.initialHtml != null && widget.initialHtml!.isNotEmpty) {

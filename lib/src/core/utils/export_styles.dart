@@ -242,7 +242,23 @@ sup { vertical-align: super; font-size: smaller; }
   $stylesheetLinks
   <style>
 $fullCss
+
+/* Prevent FOUC - hide content until fonts load */
+body {
+  opacity: 0;
+  transition: opacity 0.15s ease-in;
+}
+body.fonts-loaded {
+  opacity: 1;
+}
   </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      (document.fonts?.ready || Promise.resolve()).then(function() {
+        document.body.classList.add('fonts-loaded');
+      });
+    });
+  </script>
 </head>
 <body>
   <div class="$editorClass">$content</div>

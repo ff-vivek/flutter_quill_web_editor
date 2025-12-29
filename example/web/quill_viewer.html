@@ -44,6 +44,15 @@
   
   <!-- Custom Font: Mulish (loads after package CSS for proper override precedence) -->
   <link rel="stylesheet" href="styles/mulish-font.css">
+  
+  <!-- Font Loading (prevents FOUC) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      (document.fonts?.ready || Promise.resolve()).then(function() {
+        document.body.classList.add('fonts-loaded');
+      });
+    });
+  </script>
 </head>
 <body class="viewer-mode">
   <div id="viewer" class="ql-editor"></div>
@@ -51,8 +60,6 @@
   <!-- Application Entry Point -->
   <script type="module">
     import { initializeViewer } from '/assets/packages/quill_web_editor/web/js/viewer.js';
-    
-    // Initialize the viewer
     initializeViewer('#viewer');
   </script>
 </body>

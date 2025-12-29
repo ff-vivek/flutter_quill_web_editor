@@ -12,6 +12,13 @@ body.viewer-mode {
   line-height: 1.8;
   color: #2c2825;
   overflow-x: hidden;
+  /* Prevent FOUC - hide content until fonts load */
+  opacity: 0;
+  transition: opacity 0.15s ease-in;
+}
+
+body.viewer-mode.fonts-loaded {
+  opacity: 1;
 }
 
 /* Restore normal cell background (no selection highlighting) */

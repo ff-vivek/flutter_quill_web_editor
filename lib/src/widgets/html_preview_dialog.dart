@@ -209,9 +209,10 @@ class _HtmlPreviewWidgetState extends State<_HtmlPreviewWidget> {
         .replaceAll('\r', '');
 
     // Build the viewer class with optional default font
-    final viewerClass = widget.defaultFont != null && widget.defaultFont!.isNotEmpty
-        ? 'ql-editor ql-font-${widget.defaultFont}'
-        : 'ql-editor';
+    final viewerClass =
+        widget.defaultFont != null && widget.defaultFont!.isNotEmpty
+            ? 'ql-editor ql-font-${widget.defaultFont}'
+            : 'ql-editor';
 
     final previewHtml = '''
 <!DOCTYPE html>
@@ -222,11 +223,27 @@ class _HtmlPreviewWidgetState extends State<_HtmlPreviewWidget> {
   <style>
     ${ExportStyles.fullCss}
     
+    /* Prevent FOUC - hide content until fonts load */
+    body {
+      opacity: 0;
+      transition: opacity 0.15s ease-in;
+    }
+    body.fonts-loaded {
+      opacity: 1;
+    }
+    
     .ql-editor {
       transform-origin: top left;
       transition: transform 0.15s ease-out;
     }
   </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      (document.fonts?.ready || Promise.resolve()).then(function() {
+        document.body.classList.add('fonts-loaded');
+      });
+    });
+  </script>
 </head>
 <body>
   <div id="viewer" class="$viewerClass"></div>

@@ -40,6 +40,15 @@
   <link rel="stylesheet" href="styles/tables.css">
   <link rel="stylesheet" href="styles/media.css">
   <link rel="stylesheet" href="styles/viewer.css">
+  
+  <!-- Font Loading (prevents FOUC) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      (document.fonts?.ready || Promise.resolve()).then(function() {
+        document.body.classList.add('fonts-loaded');
+      });
+    });
+  </script>
 </head>
 <body class="viewer-mode">
   <div id="viewer" class="ql-editor"></div>
@@ -47,8 +56,6 @@
   <!-- Application Entry Point -->
   <script type="module">
     import { initializeViewer } from './js/viewer.js';
-    
-    // Initialize the viewer
     initializeViewer('#viewer');
   </script>
 </body>

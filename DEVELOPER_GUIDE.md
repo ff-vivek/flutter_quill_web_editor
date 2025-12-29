@@ -264,14 +264,7 @@ your_app/
 
 #### Automated Copy Method
 
-Use the package's deployment script (if available):
-
-```bash
-# From your app directory
-bash path/to/quill_web_editor/package_deployment.sh
-```
-
-Or create a custom script:
+Create a simple copy script:
 
 ```bash
 #!/bin/bash

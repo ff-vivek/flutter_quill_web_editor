@@ -10,4 +10,5 @@ GEMINI.md
 
 # Deployment scripts and artifacts
 package_deployment.sh
+package_deployment_README.md
 quill-editor-deployment_*.zip

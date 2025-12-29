@@ -13,7 +13,7 @@ This document outlines the deployment strategy for hosting Quill Web Editor HTML
 - **For normal Flutter projects:** Build folder is at the **root**: `build/web/`
 - **For the quill_web_editor package:** Build folder is in the example: `example/build/web/`
 
-The packaging script (`package_deployment.sh`) automatically detects the correct location based on your project structure.
+The build output automatically contains all required files properly structured.
 
 ### Source vs Build Files
 
@@ -282,29 +282,11 @@ cd ..
 ```
 This creates a complete build output in `example/build/web/` with all files properly structured.
 
-#### Step 2: Package Files (Automated)
+#### Step 2: Copy Deployment Files
 
-**Option A: Use the packaging script (Recommended)**
-
-A bash script is provided to automatically package all required files:
-
-```bash
-./package_deployment.sh
-```
-
-**Note:** The script automatically detects the build folder location:
-- For normal Flutter projects: looks for `build/` at the root
-- For quill package: looks for `example/build/` 
-
-The script will exit with an error if the build folder is not found.
-
-This creates a timestamped zip file (`quill-editor-deployment_YYYYMMDD_HHMMSS.zip`) with all files in the correct structure, ready for deployment.
-
-See [package_deployment_README.md](../package_deployment_README.md) for detailed usage.
-
-**Option B: Manual Copy**
-
-If you prefer to copy files manually, follow the steps below.
+Copy files from the build output to your hosting location. The build folder location depends on your project type:
+- For normal Flutter projects: `build/web/`
+- For quill package: `example/build/web/`
 
 #### Step 3: Copy Files to Hosting Location
 

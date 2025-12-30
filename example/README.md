@@ -1,86 +1,301 @@
-# Example App - Custom Configuration
+# Quill Web Editor - Example Application
 
-This example demonstrates how to extend the `quill_web_editor` package with custom configurations, following Flutter web best practices.
+This example application demonstrates the features and capabilities of the **Quill Web Editor** Flutter package.
 
-## Custom Configuration Files
+## 🚀 Getting Started
 
-The example app extends the package configuration to add **Mulish font** support. Instead of duplicating all package files, we only override what's needed:
+### Prerequisites
 
-### 1. `web/js/config-override.js`
-Extends the package's `config.js`:
-- Adds `'mulish'` to `FONT_WHITELIST`
-- Extends `FONT_FAMILY_MAP` with Mulish mappings
-- Updates `TOOLBAR_OPTIONS` to include Mulish in the font dropdown
+- Flutter SDK ^3.5.0
+- Dart SDK ^3.5.0
+- Web browser (Chrome, Firefox, Safari, Edge)
 
-### 2. `web/js/utils-override.js`
-Extends the package's `utils.js`:
-- Overrides `mapFontFamily()` to use our extended `FONT_FAMILY_MAP` (includes Mulish)
+### Running the Example
 
-### 3. `web/js/quill-setup-override.js`
-Extends the package's `quill-setup.js`:
-- Uses custom `FONT_WHITELIST` and `TOOLBAR_OPTIONS` from `config-override.js`
-- Creates clipboard matchers that use our custom `mapFontFamily()` function
-
-### 4. `web/js/clipboard-override.js`
-Extends the package's `clipboard.js`:
-- Uses custom `preprocessHtml()` that includes Mulish font mapping
-
-### 5. `web/styles/mulish-font.css`
-Custom CSS file with Mulish font `@font-face` definitions:
-- Loads after package CSS for proper override precedence
-- Contains all Mulish font weights (200-900) and styles
-
-## File Structure
-
-```
-example/web/
-├── index.html                    # Flutter app entry point
-├── quill_editor.html            # References package assets + custom overrides
-├── quill_viewer.html            # References package assets + custom CSS
-├── js/                          # Custom override files only
-│   ├── config-override.js      # Extends package config
-│   ├── utils-override.js       # Extends package utils
-│   ├── quill-setup-override.js # Extends package setup
-│   └── clipboard-override.js   # Extends package clipboard
-└── styles/
-    └── mulish-font.css         # Custom font CSS
+```bash
+cd example
+flutter pub get
+flutter run -d chrome
 ```
 
-## How It Works
+## 📱 Example Pages
 
-1. **Package Assets**: The main package's JS and CSS files are declared as assets in `pubspec.yaml` and available at:
-   - `/assets/packages/quill_web_editor/web/js/...`
-   - `/assets/packages/quill_web_editor/web/styles/...`
+The example app includes three demonstration pages accessible from the home screen:
 
-2. **Custom Overrides**: The example app creates minimal override files that:
-   - Import from package assets
-   - Extend/override only what's needed
-   - Re-export unchanged functionality
+### 1. Full Editor (`EditorExamplePage`)
 
-3. **CSS Cascade**: Custom CSS (`mulish-font.css`) loads after package CSS, allowing overrides while keeping package styles intact.
+A complete editor implementation showcasing all features:
 
-## Benefits
+- **Rich text editing** with full toolbar
+- **Undo/Redo** buttons with keyboard shortcuts
+- **Zoom controls** (50% - 300%)
+- **HTML insertion** via dialog
+- **Sample content** loading
+- **HTML preview** in modal
+- **Document download** as HTML file
+- **Auto-save simulation** with status indicator
+- **Live statistics** (word count, character count)
+- **Output preview** panel with HTML/Text tabs
 
-✅ **Lean Structure**: Only 4 custom JS files + 1 CSS file (vs 20+ duplicate files)  
-✅ **Easy Maintenance**: Package updates automatically reflected  
-✅ **Clear Customization**: Shows exactly what was customized  
-✅ **Follows Best Practices**: Extends, doesn't duplicate  
+**Key Implementation Details:**
 
-## Adding More Customizations
+```dart
+// Uses GlobalKey for editor access
+final GlobalKey<QuillEditorWidgetState> _editorKey = GlobalKey();
 
-To add more customizations:
+// Default font configuration
+static const String _defaultFont = 'mulish';
 
-1. **Fonts**: Add to `FONT_WHITELIST` in `config-override.js`
-2. **Toolbar**: Modify `TOOLBAR_OPTIONS` in `config-override.js`
-3. **Styles**: Add CSS files that load after package CSS
-4. **Functionality**: Create override files that extend package modules
+// Editor widget with callbacks
+QuillEditorWidget(
+  key: _editorKey,
+  onContentChanged: _onContentChanged,
+  initialHtml: _sampleHtml,
+  defaultEditorFont: _defaultFont,
+)
 
-## References
+// Programmatic operations
+_editorKey.currentState?.setHTML(htmlContent);
+_editorKey.currentState?.undo();
+_editorKey.currentState?.zoomIn();
+```
 
-- [Customizing Package CSS Documentation](../docs/CUSTOMIZING_PACKAGE_CSS_FLUTTER_WEB.md)
-- [Example Lean Plan](../docs/EXAMPLE_LEAN_PLAN.md)
+---
 
+### 2. Dropdown Insert (`DropdownInsertExamplePage`)
 
+Demonstrates using `QuillEditorController` to insert content from Flutter dropdowns:
 
+- **Template insertion** - Pre-defined text blocks
+- **Variable insertion** - Placeholder tokens like `{{CUSTOMER_NAME}}`
+- **Controller-based state management**
+- **Reactive UI** with `ChangeNotifier`
 
+**Key Implementation Details:**
 
+```dart
+// Controller for programmatic access
+final QuillEditorController _editorController = QuillEditorController();
+
+@override
+void initState() {
+  super.initState();
+  _editorController.addListener(_onControllerChanged);
+}
+
+@override
+void dispose() {
+  _editorController.removeListener(_onControllerChanged);
+  _editorController.dispose();
+  super.dispose();
+}
+
+// Editor widget with controller
+QuillEditorWidget(
+  controller: _editorController,
+  onContentChanged: _onContentChanged,
+  initialHtml: '<p>Start typing...</p>',
+)
+
+// Insert content programmatically
+_editorController.insertText('Hello, World!');
+```
+
+**Available Templates:**
+| Template | Content |
+|----------|---------|
+| Greeting | "Hello, welcome to our service!" |
+| Thank You | "Thank you for your business." |
+| Signature | "Best regards,\nThe Team" |
+| Disclaimer | Confidentiality notice |
+| Contact | Contact information block |
+
+**Available Variables:**
+| Variable | Placeholder |
+|----------|-------------|
+| Customer Name | `{{CUSTOMER_NAME}}` |
+| Order ID | `{{ORDER_ID}}` |
+| Date | `{{DATE}}` |
+| Amount | `{{AMOUNT}}` |
+| Product Name | `{{PRODUCT_NAME}}` |
+| Company Name | `{{COMPANY_NAME}}` |
+
+---
+
+### 3. Custom Actions (`CustomActionsExamplePage`)
+
+Demonstrates the Custom Actions API for registering and executing user-defined actions:
+
+- **Register reusable actions** with callbacks
+- **Execute registered actions** from dropdown
+- **One-off actions** without registration
+- **Action response handling**
+- **Execution counter**
+
+**Key Implementation Details:**
+
+```dart
+// Register an action
+_editorController.registerAction(
+  QuillEditorAction(
+    name: 'insertTimestamp',
+    parameters: {'format': 'ISO'},
+    onExecute: () => debugPrint('Executing: insertTimestamp'),
+    onResponse: (response) => _handleActionResponse('Timestamp', response),
+  ),
+);
+
+// Execute registered action
+_editorController.executeAction('insertTimestamp');
+
+// Execute one-off action (without registration)
+_editorController.executeCustom(
+  action: 'quickNote',
+  parameters: {'type': 'note', 'priority': 'high'},
+  onResponse: (response) => print('Done'),
+);
+```
+
+**Available Actions:**
+| Action | Description | Content Inserted |
+|--------|-------------|------------------|
+| Insert Timestamp | Current date/time | 📅 2025-12-30 10:30:45 |
+| Insert Divider | Horizontal rule | ────────────────── |
+| Insert Warning Box | Warning callout | ⚠️ Warning blockquote |
+| Insert Info Box | Info callout | ℹ️ Info blockquote |
+| Insert Success Box | Success callout | ✅ Success blockquote |
+| Insert Code Block | Code snippet | Dart code template |
+| Insert Signature | Signature block | Name, title, date |
+
+---
+
+## 🎨 Custom Font Registration
+
+The example demonstrates registering a custom font (Mulish) with priority-based loading:
+
+```dart
+// In main.dart, before runApp()
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Register custom font with three-priority loading
+  FontRegistry.instance.registerFont(
+    const CustomFontConfig(
+      name: 'Mulish',
+      value: 'mulish',
+      fontFamily: 'Mulish',
+      // Priority 1: Hosted fonts (your CDN/server)
+      hostedFontBaseUrl: 'https://cdn.example.com/fonts/',
+      hostedFontVariants: [
+        FontVariant(url: 'Mulish-Regular.ttf', weight: 400, format: 'truetype'),
+        FontVariant(url: 'Mulish-Bold.ttf', weight: 700, format: 'truetype'),
+        // ... more variants
+      ],
+      // Priority 2: Google Fonts fallback (if hosted fails)
+      googleFontsFamily: 'Mulish:wght@400;500;600;700',
+      // Priority 3: System fallback
+      fallback: 'sans-serif',
+    ),
+  );
+
+  runApp(const QuillEditorExampleApp());
+}
+```
+
+### Font Loading Priority
+
+1. **Hosted Assets** - Load from your CDN/server (fastest, works offline)
+2. **Google Fonts** - Fallback if hosted assets fail
+3. **System Fallback** - Final fallback (sans-serif, serif, etc.)
+
+---
+
+## 📁 Project Structure
+
+```
+example/
+├── lib/
+│   ├── main.dart                         # App entry point + font registration
+│   └── pages/
+│       ├── editor_example_page.dart      # Full editor demo
+│       ├── dropdown_insert_example_page.dart  # Dropdown insert demo
+│       └── custom_actions_example_page.dart   # Custom actions demo
+├── web/
+│   ├── index.html                        # Flutter web entry point
+│   ├── quill_editor.html                 # Editor HTML (copy from package)
+│   ├── quill_viewer.html                 # Viewer HTML (copy from package)
+│   ├── js/
+│   │   ├── config-override.js            # Custom font configuration
+│   │   └── ... (copy from package)
+│   └── styles/
+│       ├── mulish-font.css               # Custom font @font-face
+│       └── ... (copy from package)
+└── assets/
+    └── fonts/                            # Local font files (optional)
+```
+
+---
+
+## 🔧 Key Components Used
+
+### Widgets
+
+| Widget | Purpose |
+|--------|---------|
+| `QuillEditorWidget` | Main rich text editor |
+| `QuillEditorController` | Programmatic editor control |
+| `ZoomControls` | Zoom in/out/reset UI |
+| `SaveStatusIndicator` | Shows save state (saved/saving/unsaved) |
+| `OutputPreview` | HTML/Text preview tabs |
+| `AppCard` | Styled card container |
+| `StatCardRow` | Statistics display row |
+| `HtmlPreviewDialog` | Full-screen HTML preview |
+| `InsertHtmlDialog` | HTML insertion dialog |
+
+### Services
+
+| Service | Purpose |
+|---------|---------|
+| `DocumentService` | Download, print, clipboard operations |
+| `TextStats` | Word/character counting from HTML |
+| `FontRegistry` | Custom font registration |
+
+### Constants
+
+| Constant | Purpose |
+|----------|---------|
+| `AppColors` | Color palette |
+| `AppTheme` | Theme configuration |
+| `EditorConfig` | Editor settings (zoom limits, table size, etc.) |
+
+---
+
+## 📋 Features Demonstrated
+
+- ✅ Rich text formatting (bold, italic, underline, strikethrough)
+- ✅ Headers (H1-H6)
+- ✅ Lists (ordered, bullet, checklist)
+- ✅ Blockquotes and code blocks
+- ✅ Links and media embedding
+- ✅ Tables with resize and header rows
+- ✅ Custom fonts via FontRegistry
+- ✅ Zoom controls (50%-300%)
+- ✅ Undo/Redo with history
+- ✅ HTML import/export
+- ✅ Controller-based programmatic access
+- ✅ Custom actions API
+- ✅ Auto-save simulation
+- ✅ Document statistics
+
+---
+
+## 📚 Learn More
+
+- [Developer Guide](../DEVELOPER_GUIDE.md) - Complete API documentation
+- [Deployment Guide](../doc/DEPLOYMENT.md) - Production deployment instructions
+- [Quill.js Documentation](https://quilljs.com/docs/) - Underlying editor
+
+---
+
+*Last Updated: December 2024*  
+*Compatible with Quill Web Editor v1.2.0*

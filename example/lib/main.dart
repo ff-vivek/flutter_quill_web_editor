@@ -34,8 +34,7 @@ void main() {
       name: 'Mulish',
       value: 'mulish',
       fontFamily: 'Mulish',
-      hostedFontBaseUrl:
-          'https://i-treasuryuat.icicibank.com/utsuat/utaweb/fonts/',
+      hostedFontBaseUrl: 'https://quill-editor-demo.netlify.app/assets/fonts/',
       hostedFontVariants: [
         // ExtraLight (200)
         FontVariant(

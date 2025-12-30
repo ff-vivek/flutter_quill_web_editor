@@ -69,6 +69,7 @@
 
 | Task | Section | File Location |
 |------|---------|---------------|
+| Register custom font | [6.8 FontRegistry](#68-fontregistry) | `lib/src/core/utils/font_registry.dart` |
 | Add new font | [7.1 Adding a New Font](#71-adding-a-new-font) | `web/js/config.js`, `web/styles/fonts.css` |
 | Add toolbar button | [7.2 Adding a New Toolbar Button](#72-adding-a-new-toolbar-button) | `web/js/config.js`, `web/js/quill-setup.js` |
 | Add command | [7.3 Adding a New Command](#73-adding-a-new-command) | `web/js/commands.js`, `lib/src/widgets/quill_editor_widget.dart` |
@@ -84,6 +85,7 @@
 | `quill-setup.js` | Quill initialization | `web/js/quill-setup.js` |
 | `quill_editor_widget.dart` | Main Flutter widget | `lib/src/widgets/quill_editor_widget.dart` |
 | `quill_editor_controller.dart` | Controller for editor | `lib/src/widgets/quill_editor_controller.dart` |
+| `font_registry.dart` | Custom font registration | `lib/src/core/utils/font_registry.dart` |
 | `editor_config.dart` | Editor constants | `lib/src/core/constants/editor_config.dart` |
 
 ### ⚡ Quick Code Snippets
@@ -136,6 +138,24 @@ _controller.registerAction(QuillEditorAction(
 _controller.executeAction('insertTimestamp');
 ```
 
+**Custom Fonts (in main.dart, before runApp)**:
+```dart
+FontRegistry.instance.registerFont(
+  CustomFontConfig(
+    name: 'Mulish',
+    value: 'mulish',
+    fontFamily: 'Mulish',
+    hostedFontBaseUrl: 'https://cdn.example.com/fonts/',
+    hostedFontVariants: [
+      FontVariant(url: 'Mulish-Regular.woff2', weight: 400),
+      FontVariant(url: 'Mulish-Bold.woff2', weight: 700),
+    ],
+    googleFontsFamily: 'Mulish:wght@400;700',  // Fallback
+    fallback: 'sans-serif',
+  ),
+);
+```
+
 ---
 
 ## 1. Introduction
@@ -150,6 +170,7 @@ _controller.executeAction('insertTimestamp');
 |----------|----------|
 | **Controller API** | `QuillEditorController` for programmatic control (like `TextEditingController`) |
 | **Custom Actions** | Register and execute user-defined actions with callbacks |
+| **Custom Fonts** | `FontRegistry` for enterprise font management with priority-based loading |
 | **Text Formatting** | Bold, Italic, Underline, Strikethrough, Subscript, Superscript |
 | **Structure** | Headers (H1-H6), Paragraphs, Blockquotes, Code Blocks |
 | **Lists** | Ordered Lists, Bullet Lists, Checklists |
@@ -158,7 +179,7 @@ _controller.executeAction('insertTimestamp');
 | **Tables** | Full table support via quill-table-better with resize and header options |
 | **Alignment** | Left, Center, Right, Justify + RTL Support |
 | **Export** | Clean HTML Export, Print Support, Local Storage |
-| **UX** | Zoom Controls (50%-300%), Undo/Redo, Smart Paste |
+| **UX** | Zoom Controls (50%-300%), Undo/Redo, Smart Paste, FOUC Prevention |
 
 ### Platform Support
 
@@ -928,7 +949,7 @@ _editorKey.currentState?.format('header', false); // Remove header
 
 ### 5.2 Font Family
 
-Seven custom fonts are available, loaded from Google Fonts CDN.
+Seven custom fonts are available by default, loaded from Google Fonts CDN.
 
 | Font Name | Quill Value | CSS Class |
 |-----------|------------|-----------|
@@ -940,6 +961,26 @@ Seven custom fonts are available, loaded from Google Fonts CDN.
 | Source Code Pro | `source-code` | `.ql-font-source-code` |
 | Crimson Pro | `crimson` | `.ql-font-crimson` |
 | DM Sans | `dm-sans` | `.ql-font-dm-sans` |
+
+**Custom Font Registration** - Register your own fonts using `FontRegistry`:
+```dart
+// In main.dart, before runApp()
+FontRegistry.instance.registerFont(
+  CustomFontConfig(
+    name: 'Corporate Font',
+    value: 'corporate',
+    fontFamily: 'CorporateFont',
+    hostedFontBaseUrl: 'https://cdn.yourcompany.com/fonts/',
+    hostedFontVariants: [
+      FontVariant(url: 'Corporate-Regular.woff2', weight: 400),
+      FontVariant(url: 'Corporate-Bold.woff2', weight: 700),
+    ],
+    fallback: 'sans-serif',
+  ),
+);
+```
+
+See [6.8 FontRegistry](#68-fontregistry) for complete API documentation.
 
 **Font Mapping (for paste handling)** - Common fonts are mapped to available fonts:
 ```javascript
@@ -2024,9 +2065,157 @@ AppFonts.googleFontsUrl       // Google Fonts URL
 
 ---
 
+### 6.8 FontRegistry
+
+A singleton registry for managing custom fonts with priority-based loading.
+
+#### Font Loading Priority
+
+1. **Hosted Assets** (Primary) - Load from your CDN or server
+2. **Google Fonts** (Fallback) - Optional, if hosted assets fail
+3. **System Fallback** (Final) - Always available system fonts
+
+#### FontRegistry Methods
+
+| Method | Description |
+|--------|-------------|
+| `registerFont(CustomFontConfig)` | Register a custom font |
+| `registerFonts(List<CustomFontConfig>)` | Register multiple fonts at once |
+| `unregisterFont(String value)` | Remove a font by its value |
+| `clearCustomFonts()` | Remove all custom fonts |
+| `hasFont(String value)` | Check if a font is registered |
+| `generateFontClasses()` | Generate CSS classes for all fonts |
+| `generateFontFaceCSS()` | Generate @font-face CSS |
+| `generateGoogleFontsUrl()` | Generate Google Fonts URL |
+| `generateLoadingStrategySummary()` | Debug summary of font configuration |
+
+#### FontRegistry Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `instance` | `FontRegistry` | Singleton instance |
+| `customFonts` | `List<CustomFontConfig>` | Registered custom fonts |
+| `allFonts` | `List<FontConfig>` | All fonts (defaults + custom) |
+| `externalStylesheets` | `List<String>` | Stylesheet URLs for export |
+
+#### CustomFontConfig
+
+Configuration class for custom fonts.
+
+```dart
+CustomFontConfig(
+  name: 'Mulish',              // Display name in font picker
+  value: 'mulish',             // Quill value (CSS class: .ql-font-mulish)
+  fontFamily: 'Mulish',        // CSS font-family value
+  
+  // Priority 1: Hosted fonts (your CDN/server)
+  hostedFontBaseUrl: 'https://cdn.example.com/fonts/',
+  hostedFontVariants: [
+    FontVariant(url: 'Mulish-Regular.woff2', weight: 400, format: 'woff2'),
+    FontVariant(url: 'Mulish-Bold.woff2', weight: 700, format: 'woff2'),
+    FontVariant(url: 'Mulish-Italic.woff2', weight: 400, isItalic: true),
+  ],
+  
+  // Priority 2: Google Fonts fallback (optional)
+  googleFontsFamily: 'Mulish:wght@400;700',
+  
+  // Priority 3: System fallback
+  fallback: 'sans-serif',
+)
+```
+
+#### FontVariant
+
+Configuration for individual font weight/style variants.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `url` | `String` | required | URL to font file |
+| `weight` | `int` | `400` | Font weight (100-900) |
+| `isItalic` | `bool` | `false` | Whether this is italic |
+| `format` | `String` | `'truetype'` | Font format (woff2, woff, truetype) |
+
+#### Complete Example
+
+```dart
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Register custom font before running app
+  FontRegistry.instance.registerFont(
+    const CustomFontConfig(
+      name: 'Corporate Font',
+      value: 'corporate',
+      fontFamily: 'CorporateFont',
+      // Priority 1: Your hosted fonts
+      hostedFontBaseUrl: 'https://cdn.yourcompany.com/fonts/',
+      hostedFontVariants: [
+        FontVariant(url: 'Corporate-Regular.woff2', weight: 400, format: 'woff2'),
+        FontVariant(url: 'Corporate-Medium.woff2', weight: 500, format: 'woff2'),
+        FontVariant(url: 'Corporate-Bold.woff2', weight: 700, format: 'woff2'),
+      ],
+      // Priority 2: No Google Fonts fallback (proprietary font)
+      googleFontsFamily: null,
+      // Priority 3: System fallback
+      fallback: 'Arial, sans-serif',
+    ),
+  );
+  
+  runApp(const MyApp());
+}
+```
+
+#### Debugging Font Configuration
+
+```dart
+// Print font loading strategy summary
+debugPrint(FontRegistry.instance.generateLoadingStrategySummary());
+
+// Output:
+// === Font Loading Strategy ===
+// 
+// Package Default Fonts:
+//   - Roboto (Roboto)
+//   - Open Sans (Open Sans)
+//   ...
+// 
+// Custom Registered Fonts:
+//   Corporate Font (CorporateFont):
+//     Priority 1 (Hosted): ✓ Configured
+//       Base URL: https://cdn.yourcompany.com/fonts/
+//       Variants: 3 files
+//     Priority 2 (Google Fonts): ✗ Disabled
+//     Priority 3 (Fallback): Arial, sans-serif
+```
+
+#### Editor Setup for Custom Fonts
+
+To use custom fonts in the editor toolbar, you also need to:
+
+1. **Add font to `web/js/config-override.js`**:
+```javascript
+// Add to FONT_WHITELIST
+export const FONT_WHITELIST_OVERRIDE = ['corporate'];
+```
+
+2. **Add @font-face to `web/styles/` (for local preview)**:
+```css
+@font-face {
+  font-family: 'CorporateFont';
+  src: url('https://cdn.yourcompany.com/fonts/Corporate-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+```
+
+---
+
 ## 7. Extending & Customizing the Editor
 
 ### 7.1 Adding a New Font
+
+> **Recommended**: For custom fonts that need to be included in HTML exports, use the `FontRegistry` API (see [6.8 FontRegistry](#68-fontregistry)). The method below is for adding fonts only to the editor interface.
 
 To add a new font to the editor, you need to update both the JavaScript and Dart configurations:
 

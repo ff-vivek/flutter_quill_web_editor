@@ -302,6 +302,20 @@ class QuillEditorWidgetState extends State<QuillEditorWidget> {
           final response = data['response'] as Map<String, dynamic>?;
           _effectiveController.handleActionResponse(actionName, response);
         }
+      } else if (data['type'] == 'pluginAction') {
+        // Handle plugin action from JavaScript
+        final actionName = data['actionName'] as String?;
+        if (actionName != null) {
+          final params = data['params'] as Map<String, dynamic>?;
+          _effectiveController.handlePluginAction(actionName, params);
+        }
+      } else if (data['type'] == 'pluginToolbarClick') {
+        // Handle plugin toolbar item click
+        final itemId = data['itemId'] as String?;
+        if (itemId != null) {
+          final params = data['params'] as Map<String, dynamic>?;
+          _effectiveController.executePluginAction(itemId, params: params);
+        }
       }
     } catch (e) {
       // Only log errors if not disposed (disposed errors are expected)

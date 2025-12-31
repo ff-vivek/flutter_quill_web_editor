@@ -200,3 +200,103 @@
   font-size: 14px;
 }
 
+/* ======================================
+   Plugin Toolbar Styles
+   ====================================== */
+
+/* Plugin toolbar container */
+.ql-plugin-toolbar {
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid #e5e0da;
+}
+
+/* Plugin toolbar buttons */
+.ql-plugin-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #6b6560;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+}
+
+.ql-plugin-button:hover {
+  background: rgba(196, 93, 53, 0.1);
+  color: #c45d35;
+}
+
+.ql-plugin-button:active {
+  background: rgba(196, 93, 53, 0.2);
+}
+
+.ql-plugin-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Plugin toolbar select/dropdown */
+.ql-plugin-select {
+  background: none;
+  border: 1px solid #e5e0da;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: #6b6560;
+  cursor: pointer;
+  min-width: 80px;
+  height: 28px;
+}
+
+.ql-plugin-select:hover {
+  border-color: #c45d35;
+}
+
+.ql-plugin-select:focus {
+  outline: none;
+  border-color: #c45d35;
+  box-shadow: 0 0 0 2px rgba(196, 93, 53, 0.1);
+}
+
+/* Common plugin icon classes */
+.ql-emoji::after {
+  content: '😀';
+}
+
+.ql-mention::after {
+  content: '@';
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.ql-hashtag::after {
+  content: '#';
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.ql-template::after {
+  content: '📋';
+}
+
+.ql-code-language::after {
+  content: '</>';
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.ql-highlight::after {
+  content: '🖍️';
+}
+
+.ql-word-count::after {
+  content: '📊';
+}
+

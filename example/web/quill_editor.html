@@ -120,14 +120,20 @@
   <script type="module">
     import { initializeQuill } from './js/quill-setup-override.js';
     import { setupPasteHandler, setupSelectionPreservation } from './js/clipboard-override.js';
-    import { setupCommandListener } from '/assets/packages/quill_web_editor/web/js/commands.js';
+    import { setupCommandListener, registerPluginAction } from '/assets/packages/quill_web_editor/web/js/commands.js';
     import { setupMediaResize } from '/assets/packages/quill_web_editor/web/js/media-resize.js';
     import { setupTableResize } from '/assets/packages/quill_web_editor/web/js/table-resize.js';
     import { setupDragDrop, setupMediaObserver } from '/assets/packages/quill_web_editor/web/js/drag-drop.js';
-    import { sendReady, sendContentChange } from '/assets/packages/quill_web_editor/web/js/flutter-bridge.js';
+    import { sendReady, sendContentChange, sendToFlutter } from '/assets/packages/quill_web_editor/web/js/flutter-bridge.js';
+    
+    // Import extended plugins (example plugins)
+    import { initGifPicker, showGifPicker } from './js/gif-picker.js';
 
     // Initialize Quill editor
     const editor = initializeQuill(Quill, QuillTableBetter);
+    
+    // Store editor reference globally for plugins
+    window.quillEditor = editor;
 
     // Set up clipboard handling
     setupPasteHandler(editor, Quill);
@@ -145,6 +151,29 @@
     // Set up drag & drop handling
     setupDragDrop(editor);
     setupMediaObserver(editor);
+    
+    // ===========================================
+    // Extended Plugin Initialization
+    // ===========================================
+    
+    // Initialize GIF picker with default options
+    initGifPicker(editor, {
+      defaultWidth: 300,
+      showPreview: true
+    });
+    
+    // Register GIF plugin action handler with the commands module
+    // This makes the GIF picker show when the toolbar button is clicked
+    registerPluginAction('showGifPicker', (data, ed) => {
+      showGifPicker(ed || editor, (url) => {
+        sendToFlutter({
+          type: 'pluginAction',
+          actionName: 'insertGif',
+          params: { url: url }
+        });
+        sendContentChange(ed || editor);
+      });
+    });
 
     // Listen for content changes
     editor.on('text-change', function(delta, oldDelta, source) {

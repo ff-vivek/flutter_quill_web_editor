@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 
 import '../core/constants/editor_config.dart';
+import '../plugins/quill_plugin.dart';
+import '../plugins/quill_plugin_registry.dart';
 
 /// Callback signature for sending commands to the Quill editor.
 typedef SendCommandCallback = void Function(Map<String, dynamic> data);
@@ -292,6 +294,7 @@ class QuillEditorController extends ChangeNotifier {
   /// This is called internally by [QuillEditorWidget].
   void markReady() {
     _isReady = true;
+    _notifyPluginsReady();
     notifyListeners();
   }
 
@@ -468,6 +471,143 @@ class QuillEditorController extends ChangeNotifier {
       return;
     }
     _sendCommand!(data);
+  }
+
+  // ============================================================
+  // Plugin System Integration
+  // ============================================================
+
+  /// Gets the plugin registry instance.
+  QuillPluginRegistry get pluginRegistry => QuillPluginRegistry.instance;
+
+  /// Registers a plugin with the registry.
+  ///
+  /// This is a convenience method that delegates to [QuillPluginRegistry].
+  /// ```dart
+  /// controller.registerPlugin(MyPlugin());
+  /// ```
+  void registerPlugin(QuillPlugin plugin) {
+    pluginRegistry.register(plugin);
+    // If editor is ready, notify the plugin
+    if (_isReady) {
+      plugin.onEditorReady(this);
+      _sendPluginConfig();
+    }
+  }
+
+  /// Registers multiple plugins at once.
+  void registerPlugins(List<QuillPlugin> plugins) {
+    for (final plugin in plugins) {
+      registerPlugin(plugin);
+    }
+  }
+
+  /// Unregisters a plugin by name.
+  void unregisterPlugin(String name) {
+    pluginRegistry.unregister(name);
+    _sendPluginConfig();
+  }
+
+  /// Checks if a plugin is registered.
+  bool hasPlugin(String name) => pluginRegistry.hasPlugin(name);
+
+  /// Gets a plugin by name.
+  QuillPlugin? getPlugin(String name) => pluginRegistry.getPlugin(name);
+
+  /// Gets a plugin by type.
+  T? getPluginByType<T extends QuillPlugin>() =>
+      pluginRegistry.getPluginByType<T>();
+
+  /// Gets all toolbar items from registered plugins.
+  List<QuillToolbarItem> get pluginToolbarItems => pluginRegistry.allToolbarItems;
+
+  /// Sends plugin configuration to the JavaScript editor.
+  ///
+  /// This is called automatically when:
+  /// - The editor becomes ready
+  /// - Plugins are registered or unregistered
+  void _sendPluginConfig() {
+    if (!_isReady) return;
+
+    _executeCommand({
+      'action': 'configurePlugins',
+      'plugins': pluginRegistry.toJson(),
+    });
+  }
+
+  /// Handles a plugin command from JavaScript.
+  ///
+  /// This is called internally by [QuillEditorWidget] when
+  /// the JavaScript editor sends a plugin action.
+  Future<void> handlePluginAction(
+    String actionName,
+    Map<String, dynamic>? params,
+  ) async {
+    // First check if there's a registered action
+    final action = _registeredActions[actionName];
+    if (action != null) {
+      action.onExecute?.call();
+      action.onResponse?.call(params);
+      return;
+    }
+
+    // Then check plugin handlers
+    await pluginRegistry.handleAction(actionName, params, this);
+  }
+
+  /// Executes a plugin toolbar item action.
+  ///
+  /// [actionId] - The toolbar item ID or action name
+  /// [params] - Parameters passed from the toolbar (e.g., dropdown value)
+  void executePluginAction(String actionId, {Map<String, dynamic>? params}) {
+    // First try to find as a toolbar item
+    QuillToolbarItem? item;
+    try {
+      item = pluginRegistry.allToolbarItems.firstWhere(
+        (t) => t.id == actionId,
+      );
+    } catch (_) {
+      // Not found as toolbar item, will try as action name
+    }
+
+    if (item != null) {
+      // Call local handler if present
+      item.handler?.call();
+
+      // Determine the action to execute
+      final actionName = item.action ?? actionId;
+
+      // Check if there's a command handler registered for this action
+      final handlers = pluginRegistry.allCommandHandlers;
+      if (handlers.containsKey(actionName)) {
+        // Execute the handler directly
+        handlers[actionName]!(params, this);
+      } else {
+        // Send to JavaScript
+        _executeCommand({
+          'action': 'pluginAction',
+          'pluginActionId': actionName,
+          ...?params,
+        });
+      }
+    } else {
+      // Try to find a command handler with this name
+      final handlers = pluginRegistry.allCommandHandlers;
+      if (handlers.containsKey(actionId)) {
+        handlers[actionId]!(params, this);
+      } else {
+        debugPrint(
+          'QuillEditorController: No handler found for action "$actionId"',
+        );
+      }
+    }
+  }
+
+  /// Notifies all registered plugins that the editor is ready.
+  /// This is called internally by [QuillEditorWidget].
+  void _notifyPluginsReady() {
+    pluginRegistry.notifyEditorReady(this);
+    _sendPluginConfig();
   }
 
   @override

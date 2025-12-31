@@ -4,6 +4,7 @@ import 'package:quill_web_editor/quill_web_editor.dart';
 import 'pages/custom_actions_example_page.dart';
 import 'pages/dropdown_insert_example_page.dart';
 import 'pages/editor_example_page.dart';
+import 'pages/plugin_example_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -227,6 +228,21 @@ class ExampleHomePage extends StatelessWidget {
                           MaterialPageRoute<void>(
                             builder: (context) =>
                                 const CustomActionsExamplePage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _ExampleCard(
+                      title: 'Plugin System',
+                      description:
+                          'Extend the editor with plugins for emoji, mentions, hashtags, and custom features.',
+                      icon: Icons.extension,
+                      color: Colors.purple,
+                      onTap: () {
+                        Navigator.push<void>(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (context) => const PluginExamplePage(),
                           ),
                         );
                       },

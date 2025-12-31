@@ -6,10 +6,20 @@
 
 import { ZOOM_MIN, ZOOM_MAX } from './config.js';
 import { preprocessHtml, extractBodyContent } from './utils.js';
-import { sendContentChange, sendContentsResponse, sendZoomChange, sendCustomActionResponse } from './flutter-bridge.js';
+import { sendContentChange, sendContentsResponse, sendZoomChange, sendCustomActionResponse, sendToFlutter } from './flutter-bridge.js';
+import { showEmojiPicker, hideEmojiPicker, initEmojiPicker } from './emoji-picker.js';
 
 // Registry for custom action handlers
 const customActionHandlers = new Map();
+
+// Registry for plugin action handlers
+const pluginActionHandlers = new Map();
+
+// Registered plugin toolbar items
+const pluginToolbarItems = new Map();
+
+// Registered plugin stylesheets (to prevent duplicates)
+const registeredStylesheetIds = new Set();
 
 /**
  * Store image dimensions and alignment from HTML before conversion
@@ -357,6 +367,40 @@ export function handleCommand(data, editor, Quill) {
       }
       break;
 
+    case 'configurePlugins':
+      // Configure plugins from Flutter
+      if (data.plugins) {
+        configurePlugins(data.plugins, editor, Quill);
+      }
+      break;
+
+    case 'pluginAction':
+      // Execute a plugin action
+      if (data.pluginActionId) {
+        const actionId = data.pluginActionId;
+        console.log('Executing plugin action:', actionId, data);
+        
+        // Check if there's a registered handler
+        const pluginHandler = pluginActionHandlers.get(actionId);
+        if (pluginHandler) {
+          try {
+            pluginHandler(data, editor, Quill);
+          } catch (error) {
+            console.error('Plugin action error:', error);
+          }
+        }
+        
+        // Notify Flutter about the plugin action
+        sendToFlutter({
+          type: 'pluginAction',
+          actionName: actionId,
+          params: data
+        });
+        
+        sendContentChange(editor);
+      }
+      break;
+
     case 'customAction':
       // Handle user-defined custom actions
       if (data.customActionName) {
@@ -422,6 +466,344 @@ export function unregisterCustomAction(actionName) {
  */
 export function getRegisteredCustomActions() {
   return Array.from(customActionHandlers.keys());
+}
+
+/**
+ * Configure plugins from Flutter
+ * @param {Object} pluginsConfig - Plugin configuration from Flutter
+ * @param {Object} editor - Quill editor instance
+ * @param {Object} Quill - Quill constructor
+ */
+function configurePlugins(pluginsConfig, editor, Quill) {
+  console.log('Configuring plugins:', pluginsConfig);
+  
+  // Store editor reference for emoji picker
+  window.quillEditor = editor;
+  
+  // Inject plugin stylesheets
+  if (pluginsConfig.stylesheets) {
+    pluginsConfig.stylesheets.forEach(stylesheet => {
+      injectPluginStylesheet(stylesheet);
+    });
+  }
+  
+  // Register plugin toolbar items
+  if (pluginsConfig.toolbarItems) {
+    pluginsConfig.toolbarItems.forEach(item => {
+      registerPluginToolbarItem(item, editor, Quill);
+    });
+  }
+  
+  // Register plugin formats
+  if (pluginsConfig.formats) {
+    pluginsConfig.formats.forEach(format => {
+      registerPluginFormat(format, Quill);
+    });
+  }
+  
+  // Register plugin key bindings
+  if (pluginsConfig.keyBindings) {
+    pluginsConfig.keyBindings.forEach(binding => {
+      registerPluginKeyBinding(binding, editor, Quill);
+    });
+  }
+  
+  // Initialize emoji picker if emoji plugin is present
+  const hasEmojiPlugin = pluginsConfig.plugins?.some(p => p.name === 'emoji');
+  if (hasEmojiPlugin) {
+    const emojiOptions = pluginsConfig.modules?.find(m => m.name === 'emoji')?.options || {};
+    initEmojiPicker(editor, emojiOptions);
+    
+    // Register emoji action handler
+    pluginActionHandlers.set('showEmojiPicker', (data, ed) => {
+      showEmojiPicker(ed, (emoji) => {
+        sendToFlutter({
+          type: 'pluginAction',
+          actionName: 'insertEmoji',
+          params: { emoji: emoji }
+        });
+        sendContentChange(ed);
+      });
+    });
+  }
+  
+  console.log('Plugins configured successfully');
+}
+
+/**
+ * Inject a plugin stylesheet into the document
+ * @param {Object} stylesheet - Stylesheet configuration {css, id}
+ */
+function injectPluginStylesheet(stylesheet) {
+  // Skip if already registered
+  if (stylesheet.id && registeredStylesheetIds.has(stylesheet.id)) {
+    console.log('Stylesheet already registered:', stylesheet.id);
+    return;
+  }
+  
+  const styleEl = document.createElement('style');
+  styleEl.type = 'text/css';
+  styleEl.textContent = stylesheet.css;
+  
+  if (stylesheet.id) {
+    styleEl.id = `plugin-style-${stylesheet.id}`;
+    registeredStylesheetIds.add(stylesheet.id);
+  }
+  
+  document.head.appendChild(styleEl);
+  console.log('Injected plugin stylesheet:', stylesheet.id || '(anonymous)');
+}
+
+/**
+ * Register a plugin toolbar item
+ * @param {Object} item - Toolbar item configuration
+ * @param {Object} editor - Quill editor instance
+ * @param {Object} Quill - Quill constructor
+ */
+function registerPluginToolbarItem(item, editor, Quill) {
+  console.log('Registering toolbar item:', item.id);
+  
+  // Store the item configuration
+  pluginToolbarItems.set(item.id, item);
+  
+  // Find or create the plugin toolbar container
+  let pluginToolbar = document.querySelector('.ql-toolbar .ql-plugin-toolbar');
+  if (!pluginToolbar) {
+    const toolbar = document.querySelector('.ql-toolbar');
+    if (toolbar) {
+      pluginToolbar = document.createElement('span');
+      pluginToolbar.className = 'ql-formats ql-plugin-toolbar';
+      toolbar.appendChild(pluginToolbar);
+    }
+  }
+  
+  if (!pluginToolbar) {
+    console.warn('Could not find toolbar to add plugin item');
+    return;
+  }
+  
+  // Check if button already exists
+  if (document.querySelector(`[data-plugin-id="${item.id}"]`)) {
+    console.log('Toolbar item already exists:', item.id);
+    return;
+  }
+  
+  // Create the button element
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `ql-plugin-button ${item.icon || ''}`;
+  button.setAttribute('data-plugin-id', item.id);
+  button.setAttribute('title', item.tooltip || '');
+  
+  // If it's a dropdown, create a select element instead
+  if (item.dropdown && item.dropdown.length > 0) {
+    const select = document.createElement('select');
+    select.className = `ql-plugin-select ${item.icon || ''}`;
+    select.setAttribute('data-plugin-id', item.id);
+    select.setAttribute('title', item.tooltip || '');
+    
+    // Add empty option for label
+    const emptyOption = document.createElement('option');
+    emptyOption.value = '';
+    emptyOption.textContent = item.tooltip || 'Select...';
+    select.appendChild(emptyOption);
+    
+    // Add dropdown options
+    item.dropdown.forEach(opt => {
+      const option = document.createElement('option');
+      option.value = opt.value;
+      option.textContent = opt.label;
+      if (opt.selected) option.selected = true;
+      select.appendChild(option);
+    });
+    
+    // Handle selection
+    select.addEventListener('change', function(e) {
+      const value = e.target.value;
+      if (value) {
+        handlePluginToolbarClick(item.id, { value: value }, editor);
+        // Reset to empty
+        e.target.value = '';
+      }
+    });
+    
+    pluginToolbar.appendChild(select);
+  } else {
+    // Add click handler for buttons
+    button.addEventListener('click', function() {
+      handlePluginToolbarClick(item.id, {}, editor);
+    });
+    
+    // Add icon or text content
+    if (item.icon) {
+      // Icon will be styled via CSS class
+      const iconSpan = document.createElement('span');
+      iconSpan.className = item.icon;
+      button.appendChild(iconSpan);
+    }
+    
+    pluginToolbar.appendChild(button);
+  }
+  
+  console.log('Added toolbar item:', item.id);
+}
+
+/**
+ * Handle plugin toolbar button click
+ * @param {string} itemId - Plugin toolbar item ID
+ * @param {Object} params - Additional parameters
+ * @param {Object} editor - Quill editor instance
+ */
+function handlePluginToolbarClick(itemId, params, editor) {
+  const item = pluginToolbarItems.get(itemId);
+  if (!item) return;
+  
+  console.log('Plugin toolbar click:', itemId, params);
+  
+  // Send to Flutter
+  sendToFlutter({
+    type: 'pluginToolbarClick',
+    itemId: itemId,
+    params: params
+  });
+  
+  // If there's an action, execute it locally too
+  if (item.action) {
+    const handler = pluginActionHandlers.get(item.action);
+    if (handler) {
+      handler({ ...params, itemId: itemId }, editor);
+    }
+  }
+}
+
+/**
+ * Register a plugin format with Quill
+ * @param {Object} format - Format configuration
+ * @param {Object} Quill - Quill constructor
+ */
+function registerPluginFormat(format, Quill) {
+  console.log('Registering format:', format.name);
+  
+  // For simple formats, use Quill's inline/block blots
+  if (format.type === 'inline' && !format.blotDefinition) {
+    // Create a simple inline blot
+    const Inline = Quill.import('blots/inline');
+    
+    class PluginInlineBlot extends Inline {
+      static create(value) {
+        const node = super.create(value);
+        if (format.cssStyles) {
+          Object.entries(format.cssStyles).forEach(([prop, val]) => {
+            node.style[prop] = val;
+          });
+        }
+        return node;
+      }
+    }
+    
+    PluginInlineBlot.blotName = format.name;
+    PluginInlineBlot.tagName = format.tagName || 'span';
+    PluginInlineBlot.className = format.className;
+    
+    Quill.register(PluginInlineBlot, true);
+    console.log('Registered inline format:', format.name);
+  } else if (format.type === 'block' && !format.blotDefinition) {
+    // Create a simple block blot
+    const Block = Quill.import('blots/block');
+    
+    class PluginBlockBlot extends Block {
+      static create(value) {
+        const node = super.create(value);
+        if (format.cssStyles) {
+          Object.entries(format.cssStyles).forEach(([prop, val]) => {
+            node.style[prop] = val;
+          });
+        }
+        return node;
+      }
+    }
+    
+    PluginBlockBlot.blotName = format.name;
+    PluginBlockBlot.tagName = format.tagName || 'div';
+    PluginBlockBlot.className = format.className;
+    
+    Quill.register(PluginBlockBlot, true);
+    console.log('Registered block format:', format.name);
+  } else if (format.blotDefinition) {
+    // Execute custom blot definition
+    try {
+      eval(format.blotDefinition);
+      console.log('Registered custom format:', format.name);
+    } catch (e) {
+      console.error('Error registering custom format:', format.name, e);
+    }
+  }
+}
+
+/**
+ * Register a plugin key binding
+ * @param {Object} binding - Key binding configuration
+ * @param {Object} editor - Quill editor instance
+ * @param {Object} Quill - Quill constructor
+ */
+function registerPluginKeyBinding(binding, editor, Quill) {
+  console.log('Registering key binding:', binding.key, binding.modifiers);
+  
+  // Build the key binding configuration
+  const keyConfig = {
+    key: binding.key.length === 1 ? binding.key.charCodeAt(0) : binding.key
+  };
+  
+  // Add modifiers
+  if (binding.modifiers) {
+    if (binding.modifiers.includes('ctrl')) keyConfig.ctrlKey = true;
+    if (binding.modifiers.includes('alt')) keyConfig.altKey = true;
+    if (binding.modifiers.includes('shift')) keyConfig.shiftKey = true;
+    if (binding.modifiers.includes('meta')) keyConfig.metaKey = true;
+  }
+  
+  // Add handler
+  keyConfig.handler = function() {
+    console.log('Key binding triggered:', binding.action);
+    
+    // Send to Flutter
+    sendToFlutter({
+      type: 'pluginAction',
+      actionName: binding.action,
+      params: {}
+    });
+    
+    // Execute local handler if registered
+    const handler = pluginActionHandlers.get(binding.action);
+    if (handler) {
+      handler({}, editor);
+    }
+    
+    return !binding.preventDefault;
+  };
+  
+  // Add to keyboard module
+  editor.keyboard.addBinding(keyConfig);
+  console.log('Registered key binding:', binding.action);
+}
+
+/**
+ * Register a plugin action handler (called from JavaScript)
+ * @param {string} actionName - Name of the action
+ * @param {Function} handler - Handler function (params, editor) => void
+ */
+export function registerPluginAction(actionName, handler) {
+  pluginActionHandlers.set(actionName, handler);
+  console.log('Registered plugin action handler:', actionName);
+}
+
+/**
+ * Unregister a plugin action handler
+ * @param {string} actionName - Name of the action to unregister
+ */
+export function unregisterPluginAction(actionName) {
+  pluginActionHandlers.delete(actionName);
+  console.log('Unregistered plugin action handler:', actionName);
 }
 
 /**

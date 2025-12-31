@@ -10,6 +10,7 @@
 /// - HTML import/export
 /// - Preview functionality
 /// - Zoom controls
+/// - **Plugin system for extensibility**
 ///
 /// ## Getting Started (Using Controller - Recommended)
 ///
@@ -47,12 +48,61 @@
 /// }
 /// ```
 ///
+/// ## Plugin System
+///
+/// Extend the editor with plugins from other packages:
+///
+/// ```dart
+/// import 'package:quill_web_editor/quill_web_editor.dart';
+/// import 'package:some_quill_plugin/some_quill_plugin.dart';
+///
+/// void main() {
+///   // Register plugins before runApp
+///   QuillPluginRegistry.instance.register(SomePlugin());
+///
+///   runApp(MyApp());
+/// }
+/// ```
+///
+/// Create your own plugin:
+///
+/// ```dart
+/// class MyPlugin extends QuillPlugin {
+///   @override
+///   String get name => 'my-plugin';
+///
+///   @override
+///   List<QuillToolbarItem> get toolbarItems => [...];
+///
+///   @override
+///   List<QuillFormat> get formats => [...];
+/// }
+/// ```
+///
 /// ## Features
 ///
 /// ### Core Components
 /// - [QuillEditorController] - Controller for programmatic editor access
 /// - [QuillEditorWidget] - Main editor widget
 /// - [QuillEditorWidgetState] - Editor state (legacy GlobalKey access)
+///
+/// ### Plugin System
+/// - [QuillPlugin] - Base class for creating plugins
+/// - [QuillPluginRegistry] - Singleton for managing plugins
+/// - [QuillToolbarItem] - Custom toolbar buttons/dropdowns
+/// - [QuillFormat] - Custom text formats
+/// - [QuillModule] - Custom Quill modules
+/// - [QuillKeyBinding] - Custom keyboard shortcuts
+/// - [QuillStylesheet] - Custom CSS injection
+/// - [PluginBundle] - Group multiple plugins together
+///
+/// ### Built-in Plugins
+/// - [EmojiPlugin] - Emoji picker
+/// - [MentionPlugin] - @mention support
+/// - [HashtagPlugin] - #hashtag support
+/// - [CodeHighlightPlugin] - Syntax highlighting
+/// - [AutoLinkPlugin] - Auto-detect URLs
+/// - [WordCountPlugin] - Word/character count
 ///
 /// ### UI Components
 /// - [SaveStatusIndicator] - Shows save status (saved/saving/unsaved)
@@ -92,12 +142,19 @@ export 'src/core/utils/export_styles.dart';
 export 'src/core/utils/font_registry.dart';
 export 'src/core/utils/html_cleaner.dart';
 export 'src/core/utils/text_stats.dart';
+
+// Plugins
+export 'src/plugins/built_in_plugins.dart';
+export 'src/plugins/quill_plugin.dart';
+export 'src/plugins/quill_plugin_registry.dart';
+
 // Services
 export 'src/services/document_service.dart';
 export 'src/widgets/app_card.dart';
 export 'src/widgets/html_preview_dialog.dart';
 export 'src/widgets/insert_html_dialog.dart';
 export 'src/widgets/output_preview.dart';
+
 // Widgets
 export 'src/widgets/quill_editor_controller.dart';
 export 'src/widgets/quill_editor_widget.dart';

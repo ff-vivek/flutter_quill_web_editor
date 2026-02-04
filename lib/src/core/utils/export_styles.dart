@@ -12,9 +12,9 @@ abstract class ExportStyles {
   static String get fullCss => '''
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-body { 
-  font-family: 'Roboto', sans-serif; 
-  font-size: 1.125rem;
+body {
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.917rem;
   line-height: 1.8;
   color: #2c2825;
   background: #ffffff;

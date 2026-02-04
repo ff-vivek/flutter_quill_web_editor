@@ -14,7 +14,7 @@ A powerful, full-featured rich text editor package for **Flutter Web** powered b
 
 Experience the editor live in your browser:
 
-**[🚀 Live Playground](https://flourishing-lollipop-18e8de.netlify.app/)**
+**[🚀 Live Playground](https://quill-editor-demo.netlify.app/)**
 
 Try all the features including rich text formatting, tables, media embedding, zoom controls, and more!
 
